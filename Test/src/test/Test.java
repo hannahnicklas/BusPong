@@ -46,21 +46,40 @@ class SimpleLeapListener extends Listener {
         return point;
     }
 
+    public void swipe(Frame frame) {
+        boolean active = false; 
+        if (frame.hands().count() == 1) {
+            if (frame.hands().get(0).palmVelocity().getX() > 10) {
+                System.out.println(frame.hands().get(0).palmVelocity().getX());
+            }
+            
+            active = true; 
+            
+            if(active == true){
+                
+            }
+
+        }
+
+    }
+
     @Override
     public void onFrame(Controller controller) {
-        Frame frame = controller.frame();
-        if (!frame.hands().isEmpty()) {
-            Screen screen = controller.locatedScreens().get(0);
-            if (screen != null && screen.isValid()) {
-                Hand hand = frame.hands().get(0);
 
-                if (hand.isValid()) {
-                    Vector intersect = screen.intersect(hand.palmPosition(), hand.direction(), true);
-                    point.setValue(new Point2D(screen.widthPixels() * Math.min(1d, Math.max(0d, intersect.getX())),
-                            screen.heightPixels() * Math.min(1d, Math.max(0d, (1d - intersect.getY())))));
-                }
-            }
-        }
+        Frame frame = controller.frame();
+        swipe(frame);
+//        if (!frame.hands().isEmpty()) {
+//            Screen screen = controller.locatedScreens().get(0);
+//            if (screen != null && screen.isValid()) {
+//                Hand hand = frame.hands().get(0);
+//
+//                if (hand.isValid()) {
+//                    Vector intersect = screen.intersect(hand.palmPosition(), hand.direction(), true);
+//                    point.setValue(new Point2D(screen.widthPixels() * Math.min(1d, Math.max(0d, intersect.getX())),
+//                            screen.heightPixels() * Math.min(1d, Math.max(0d, (1d - intersect.getY())))));
+//                }
+//            }
+//        }
     }
 
 }
@@ -95,12 +114,10 @@ public class Test extends Application {
     private boolean gameStarted;
     private int playerOneXPos = 0;
     private double playerTwoXPos = width - PLAYER_WIDTH;
-    
-   
 
     @Override
     public void start(Stage stage) throws Exception {
-    
+
         leapController.addListener(listener);
 
         player1.setLayoutY(playerOneYPos);
@@ -124,9 +141,6 @@ public class Test extends Application {
         final Scene scene = new Scene(root, width, height);
         scene.setFill(Color.GRAY);
         scene.setOnMouseClicked(e -> gameStarted = true);
-         
-   
-     
 
         listener.pointProperty().addListener(new ChangeListener<Point2D>() {
             @Override
@@ -167,7 +181,7 @@ public class Test extends Application {
                             ballYPos = height / 2;
                             ballXSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
                             ballYSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
-                        
+
                         }
                         if (ballYPos > height || ballYPos < 0) {
                             ballYSpeed *= -1;
@@ -188,7 +202,7 @@ public class Test extends Application {
                             ballYSpeed *= -1;
                         }
 
-                        player1.setLayoutY(playerOneYPos-300);
+                        player1.setLayoutY(playerOneYPos - 300);
                         player1.setLayoutX(playerOneXPos);
                         player1.setFill(Color.CADETBLUE);
 
