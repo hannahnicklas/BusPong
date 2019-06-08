@@ -41,45 +41,80 @@ import javafx.util.Duration;
 class SimpleLeapListener extends Listener {
 
     private final ObjectProperty<Point2D> point = new SimpleObjectProperty<>();
+    private int xCount = 0;
+    private int minCount = 5;
+    private float[] xPositions;
+    private boolean started = false;
+    
+    public SimpleLeapListener () {
+        xPositions = new float[minCount-1];
+    }
 
     public ObservableValue<Point2D> pointProperty() {
         return point;
     }
 
     public void swipe(Frame frame) {
-        boolean active = false; 
-        if (frame.hands().count() == 1) {
-            if (frame.hands().get(0).palmVelocity().getX() > 10) {
-                System.out.println(frame.hands().get(0).palmVelocity().getX());
-            }
+        
+        if (frame.hands().count() == 1 && !started) {
+            float velocity = Math.abs(frame.hands().get(0).palmVelocity().getX());
+            float xPos = frame.hands().get(0).palmPosition().getX();
             
-            active = true; 
-            
-            if(active == true){
+            if ((xCount == 0 || xPos > xPositions[xCount-1]) && (velocity > 50 && velocity < 500)) {
+                // Überprüft die Geschwindigkeit und ob sich die xPos in nur die richtige Richtung (nach rechts) verändert, bzw. ob es der erste Eintrag ist
+
+                try {
+                    // schreibt den gültigen Eintrag in das Array mit vorher festgelegter Länge
+                    
+                    xPositions[xCount] = xPos;
+                    System.out.println("v: " + velocity + ", x: " + xPos + ", c: " + xCount);
+                    xCount++;
+
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    // bei dem Versuch, die letzten gültigen Eintrag zu schreiben, wird die Exception abgefangen
+                    
+                    started = true;
+                }
+
+            } else {
+                // Liste der Einträge wird zurückgesetzt durch Überschreiben
                 
+                xCount = 0;
+                System.out.println("too slow");
             }
-
         }
-
+        
+//        return started;
     }
 
     @Override
     public void onFrame(Controller controller) {
 
         Frame frame = controller.frame();
-        swipe(frame);
-//        if (!frame.hands().isEmpty()) {
-//            Screen screen = controller.locatedScreens().get(0);
-//            if (screen != null && screen.isValid()) {
-//                Hand hand = frame.hands().get(0);
-//
-//                if (hand.isValid()) {
-//                    Vector intersect = screen.intersect(hand.palmPosition(), hand.direction(), true);
-//                    point.setValue(new Point2D(screen.widthPixels() * Math.min(1d, Math.max(0d, intersect.getX())),
-//                            screen.heightPixels() * Math.min(1d, Math.max(0d, (1d - intersect.getY())))));
-//                }
-//            }
-//        }
+        if (!this.isStarted()) {
+            swipe(frame);
+        } else {
+            if (!frame.hands().isEmpty()) {
+                Screen screen = controller.locatedScreens().get(0);
+                if (screen != null && screen.isValid()) {
+                    Hand hand = frame.hands().get(0);
+
+                    if (hand.isValid()) {
+                        Vector intersect = screen.intersect(hand.palmPosition(), hand.direction(), true);
+                        point.setValue(new Point2D(screen.widthPixels() * Math.min(1d, Math.max(0d, intersect.getX())),
+                                screen.heightPixels() * Math.min(1d, Math.max(0d, (1d - intersect.getY())))));
+                    }
+                }
+            }
+        }
+    }
+    
+    public boolean isStarted() {
+        return this.started;
+    }
+    
+    public void setStarted(boolean started) {
+        this.started = started;
     }
 
 }
@@ -105,29 +140,76 @@ public class Test extends Application {
     private static final double BALL_R = 15;
     private int ballYSpeed = 1;
     private int ballXSpeed = 1;
-    private double playerOneYPos = height / 2;
-    private double playerTwoYPos = height / 2;
+    private double p1TopPosition = height / 2;
+    private double p1BottomPosition = p1TopPosition + PLAYER_HEIGHT;
+    private double p2TopPosition = height / 2;
+    private double p2BottomPosition = p2TopPosition + PLAYER_HEIGHT;
     private double ballXPos = width / 2;
     private double ballYPos = height / 2;
     private int scoreP1 = 0;
     private int scoreP2 = 0;
-    private boolean gameStarted;
-    private int playerOneXPos = 0;
-    private double playerTwoXPos = width - PLAYER_WIDTH;
+//    private boolean gameStarted;
+    private int p1XPosition = 0;
+    private double p2XPosition = width - PLAYER_WIDTH;
+    
+    /**
+     *
+     * @param player
+     * @return
+     */
+    public boolean ballIsInRange(int player) { //double ballYPos, 
+            
+        double playerTop = 0;
+        double playerBottom = 0;
+
+        switch(player) {
+            case 1:
+                playerTop = p1TopPosition;
+                playerBottom = p1BottomPosition;
+                break;
+            case 2:
+                playerTop = p2TopPosition;
+                playerBottom = p2BottomPosition;
+                break;
+        }
+        
+        System.out.println(ballYPos);
+        System.out.println(playerTop);
+        System.out.println(playerBottom);
+        
+
+        if (ballYPos >= playerTop && ballYPos <= playerBottom) {
+            System.out.println("ball in range");
+            return true;
+        } else {
+            System.out.println("ball not in range");
+            return false;
+        }
+    }
+    
+    public void setP1Position(double p1TopPosition) {
+        this.p1TopPosition = p1TopPosition;
+        this.p1BottomPosition = p1TopPosition + PLAYER_HEIGHT;
+    }
+    
+    public void setP2Position(double p2TopPosition) {
+        this.p2TopPosition = p2TopPosition;
+        this.p2BottomPosition = p2TopPosition + PLAYER_HEIGHT;
+    }
 
     @Override
     public void start(Stage stage) throws Exception {
 
         leapController.addListener(listener);
 
-        player1.setLayoutY(playerOneYPos);
-        player1.setLayoutX(playerOneXPos);
+        player1.setLayoutY(p1TopPosition);
+        player1.setLayoutX(p1XPosition);
         root.getChildren().add(player1);
 
 //        player2.setLayoutX(player2.getX());
 //        player2.setLayoutY(player2.getY());
-        player2.setLayoutY(playerTwoYPos);
-        player2.setLayoutX(playerTwoXPos);
+        player2.setLayoutY(p2TopPosition);
+        player2.setLayoutX(p2XPosition);
         root.getChildren().add(player2);
 
 //        ball.setLayoutX(ball.getRadius());
@@ -140,7 +222,9 @@ public class Test extends Application {
 
         final Scene scene = new Scene(root, width, height);
         scene.setFill(Color.GRAY);
-        scene.setOnMouseClicked(e -> gameStarted = true);
+//        scene.setOnMouseClicked(e -> gameStarted = true);
+
+    
 
         listener.pointProperty().addListener(new ChangeListener<Point2D>() {
             @Override
@@ -148,25 +232,42 @@ public class Test extends Application {
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        if (gameStarted) {
+                        if (listener.isStarted()) {
                             root.getChildren().remove(restart);
-                            //Bewegt den Curser 
-                            Point2D d = root.sceneToLocal(t1.getX() - scene.getX() - scene.getWindow().getX(),
-                                    t1.getY() - scene.getY() - scene.getWindow().getY());
-                            double dx = d.getX();
-                            double dy = d.getY();
-                            if (dx >= 0d && dx <= root.getWidth() - 2d * player1.getX()
-                                    && dy >= 0d && dy <= root.getHeight() - 2d * player1.getY()) {
-                                player1.setTranslateY(dy);
+                                               
+                            // bewegt den Player Balken 
+                            Point2D leapCapture = root.sceneToLocal(t1.getX() - scene.getX() - scene.getWindow().getX(),
+                                                                    t1.getY() - scene.getY() - scene.getWindow().getY());
+                            double handYPos = leapCapture.getY();
+                            
+                            if (handYPos >= 0d && handYPos <= root.getHeight() - 2d * player1.getY()) {
+                                player1.setTranslateY(handYPos - (root.getHeight()/2 + PLAYER_HEIGHT/2));
+                                setP1Position(player1.getTranslateY());
                             }
+                            
+//                            alt
+//                            Point2D d = root.sceneToLocal(t1.getX() - scene.getX() - scene.getWindow().getX(),
+//                                    t1.getY() - scene.getY() - scene.getWindow().getY());
+//                            double dx = d.getX();
+//                            double dy = d.getY();
+//                            if (dx >= 0d && dx <= root.getWidth() - 2d * player1.getX()
+//                                    && dy >= 0d && dy <= root.getHeight() - 2d * player1.getY()) {
+//                                player1.setTranslateY(dy);
+//                            }
+                            
+                            
+                            // bewegt den Ball
                             ballXPos += ballXSpeed;
                             ballYPos += ballYSpeed;
+                            
+                            // bewegt NPC Balken
                             if (ballXPos < width - width / 4) {
-                                playerTwoYPos = ballYPos - PLAYER_HEIGHT / 2;
+                                setP2Position(ballYPos - PLAYER_HEIGHT / 2);
                             } else {
-                                playerTwoYPos = ballYPos > playerTwoYPos + PLAYER_HEIGHT / 2 ? playerTwoYPos += 1 : playerTwoYPos - 1;
+                                setP2Position(ballYPos > p2TopPosition + PLAYER_HEIGHT / 2 ? p2TopPosition += 1 : p2TopPosition - 1);
                             }
 
+                            // lädt Scene neu
                             root.getChildren().remove(startText);
                             scene.setFill(Color.WHITE);
 
@@ -176,48 +277,55 @@ public class Test extends Application {
                         } else {
 
                             root.getChildren().add(restart);
-                            scene.setFill(Color.RED);
+//                            scene.setFill(Color.RED);
                             ballXPos = width / 2;
                             ballYPos = height / 2;
                             ballXSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
                             ballYSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
-
                         }
-                        if (ballYPos > height || ballYPos < 0) {
-                            ballYSpeed *= -1;
-                        }
-                        if (ballXPos < playerOneXPos - PLAYER_WIDTH) {
-//                            scoreP2++;
-                            gameStarted = false;
-                        }
-                        if (ballXPos > playerTwoXPos + PLAYER_WIDTH) {
-//                            scoreP1++;
-                            gameStarted = false;
-                        }
-                        if (((ballXPos + BALL_R > playerTwoXPos) && ballYPos >= playerTwoYPos && ballYPos <= playerTwoYPos + PLAYER_HEIGHT)
-                                || ((ballXPos < playerOneXPos + PLAYER_WIDTH) && ballYPos >= playerOneYPos && ballYPos <= playerOneYPos + PLAYER_HEIGHT)) {
+                        
+                        // Ball versucht zu fliehen
+                        if (ballYPos > height || ballYPos < 0) { ballYSpeed *= -1; }
+                        
+                        
+                        // prüft, ob Ball einen Balken trifft
+                        if ( ((ballXPos + BALL_R > p2XPosition) && ballIsInRange(2)) || ((ballXPos < p1XPosition + PLAYER_WIDTH) && ballIsInRange(1)) ) {
+                            System.out.println(1 * Math.signum(ballYSpeed));
                             ballYSpeed += 1 * Math.signum(ballYSpeed);
                             ballXSpeed += 1 * Math.signum(ballXSpeed);
                             ballXSpeed *= -1;
                             ballYSpeed *= -1;
                         }
+                        
+                        // wenn Ball nicht gehalten
+                        if (ballXPos < p1XPosition - PLAYER_WIDTH) {
+//                            scoreP2++;
+                            listener.setStarted(false);
+                        }
+                        if (ballXPos > p2XPosition + PLAYER_WIDTH) {
+//                            scoreP1++;
+                            listener.setStarted(false);
+                        }
+                        
+                        
+//                        if (  ((ballXPos + BALL_R > p2XPosition) && ballYPos >= p2TopPosition && ballYPos <= p2BottomPosition)
+//                           || ((ballXPos < playerOneXPos + PLAYER_WIDTH) && ballYPos >= p1TopPosition && ballYPos <= p1BottomPosition)) {
 
-                        player1.setLayoutY(playerOneYPos - 300);
-                        player1.setLayoutX(playerOneXPos);
+                        
+
+                        player1.setLayoutY(p1TopPosition);
+                        player1.setLayoutX(p1XPosition);
                         player1.setFill(Color.CADETBLUE);
 
-                        player2.setLayoutY(playerTwoYPos);
-                        player2.setLayoutX(playerTwoXPos);
+                        player2.setLayoutY(p2TopPosition);
+                        player2.setLayoutX(p2XPosition);
                         player2.setFill(Color.CADETBLUE);
 
-                        System.out.println(playerOneYPos + "P2");
+                        System.out.println("P1: " + p1TopPosition);
 
-                    }
-
-                }
-                );
-
-            }
+                    } // end run
+                });
+            } // end changed
         });
 
         stage.setScene(scene);
