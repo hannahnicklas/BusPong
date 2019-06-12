@@ -130,8 +130,8 @@ public class Test extends Application {
 
     private final Circle ball = new Circle(15, Color.CORAL);
 
-    private Text startText = new Text(300, 300, "Click anywhere and then move your hand in to start");
-    Text restart = new Text(width / 2, height / 2, "Click and then move your hand in to start again");
+    private Text startText = new Text(300, 300, "Swipe right to start and move your hand up and down");
+    Text restart = new Text(width / 2, height / 2, "Swipe right to start again and move your hand up and down");
 
     private static final int width = 800;
     private static final int height = 600;

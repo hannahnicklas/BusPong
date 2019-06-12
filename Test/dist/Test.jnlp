@@ -8,7 +8,7 @@
   </information>
   <resources>
     <j2se version="1.6+" java-vm-args="-Djava.library.path=C:\Users\hanna\Downloads\Leap_Motion_SDK_Windows_2.3.1\LeapDeveloperKit_2.3.1+31549_win\LeapSDK\lib\x64 "  href="http://java.sun.com/products/autodl/j2se"/>
-    <jar href="Test.jar" size="9687" download="eager" />
+    <jar href="Test.jar" size="9685" download="eager" />
     <jar href="lib\LeapJava.jar" size="85041" download="eager" />
   </resources>
   <applet-desc  width="800" height="600" main-class="com.javafx.main.NoJavaFXFallback"  name="Test" >
