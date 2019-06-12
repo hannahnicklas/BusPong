@@ -42,12 +42,14 @@ class SimpleLeapListener extends Listener {
 
     private final ObjectProperty<Point2D> point = new SimpleObjectProperty<>();
     private int xCount = 0;
-    private int minCount = 5;
-    private float[] xPositions;
+    private final int MINCOUNT = 5;
+    private float startPos;
+    private float lastPos;
     private boolean started = false;
     
     public SimpleLeapListener () {
-        xPositions = new float[minCount-1];
+        startPos = 0f;
+        lastPos = 0f;
     }
 
     public ObservableValue<Point2D> pointProperty() {
@@ -59,32 +61,33 @@ class SimpleLeapListener extends Listener {
         if (frame.hands().count() == 1 && !started) {
             float velocity = Math.abs(frame.hands().get(0).palmVelocity().getX());
             float xPos = frame.hands().get(0).palmPosition().getX();
-            
-            if ((xCount == 0 || xPos > xPositions[xCount-1]) && (velocity > 50 && velocity < 500)) {
-                // Überprüft die Geschwindigkeit und ob sich die xPos in nur die richtige Richtung (nach rechts) verändert, bzw. ob es der erste Eintrag ist
 
-                try {
-                    // schreibt den gültigen Eintrag in das Array mit vorher festgelegter Länge
-                    
-                    xPositions[xCount] = xPos;
-                    System.out.println("v: " + velocity + ", x: " + xPos + ", c: " + xCount);
-                    xCount++;
 
-                } catch (ArrayIndexOutOfBoundsException e) {
-                    // bei dem Versuch, die letzten gültigen Eintrag zu schreiben, wird die Exception abgefangen
+            if ( velocity > 50 && velocity < 500 ) {
+                
+                if (startPos == 0) {
+                    startPos = xPos;
+                    lastPos = xPos;
+
+                    System.out.println("startPos: " + startPos);
                     
-                    started = true;
+                } else if (xPos > lastPos) {
+                    lastPos = xPos;
+                    System.out.println("lastPos: " + lastPos);
+                    System.out.println("diff: " + (lastPos - startPos));
+                    
+                    if ((lastPos - startPos) >= 50) {
+                        started = true;
+                    }
                 }
 
             } else {
-                // Liste der Einträge wird zurückgesetzt durch Überschreiben
-                
-                xCount = 0;
                 System.out.println("too slow");
+
+                startPos = 0;
+                lastPos = 0;
             }
         }
-        
-//        return started;
     }
 
     @Override
@@ -173,16 +176,16 @@ public class Test extends Application {
                 break;
         }
         
-        System.out.println(ballYPos);
-        System.out.println(playerTop);
-        System.out.println(playerBottom);
+//        System.out.println(ballYPos);
+//        System.out.println(playerTop);
+//        System.out.println(playerBottom);
         
 
         if (ballYPos >= playerTop && ballYPos <= playerBottom) {
-            System.out.println("ball in range");
+//            System.out.println("ball in range");
             return true;
         } else {
-            System.out.println("ball not in range");
+//            System.out.println("ball not in range");
             return false;
         }
     }
@@ -321,7 +324,7 @@ public class Test extends Application {
                         player2.setLayoutX(p2XPosition);
                         player2.setFill(Color.CADETBLUE);
 
-                        System.out.println("P1: " + p1TopPosition);
+//                        System.out.println("P1: " + p1TopPosition);
 
                     } // end run
                 });
