@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package test;
 
 import com.leapmotion.leap.*;
@@ -34,107 +29,19 @@ import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-/**
- *
- * @author hannah
- */
-class SimpleLeapListener extends Listener {
 
-    private final ObjectProperty<Point2D> point = new SimpleObjectProperty<>();
-    private int xCount = 0;
-    private final int MINCOUNT = 5;
-    private float startPos;
-    private float lastPos;
-    private boolean started = false;
-    
-    public SimpleLeapListener () {
-        startPos = 0f;
-        lastPos = 0f;
-    }
+public class PongController extends Application {
 
-    public ObservableValue<Point2D> pointProperty() {
-        return point;
-    }
+    private final SimpleLeapListener listener;
+    private final Controller leapController;
 
-    public void swipe(Frame frame) {
-        
-        if (frame.hands().count() == 1 && !started) {
-            float velocity = Math.abs(frame.hands().get(0).palmVelocity().getX());
-            float xPos = frame.hands().get(0).palmPosition().getX();
+    private final AnchorPane root;
+    private final Rectangle player1;
+    private final Rectangle player2;
+    private final Circle ball;
 
-
-            if ( velocity > 50 && velocity < 500 ) {
-                
-                if (startPos == 0) {
-                    startPos = xPos;
-                    lastPos = xPos;
-
-                    System.out.println("startPos: " + startPos);
-                    
-                } else if (xPos > lastPos) {
-                    lastPos = xPos;
-                    System.out.println("lastPos: " + lastPos);
-                    System.out.println("diff: " + (lastPos - startPos));
-                    
-                    if ((lastPos - startPos) >= 50) {
-                        started = true;
-                    }
-                }
-
-            } else {
-                System.out.println("too slow");
-
-                startPos = 0;
-                lastPos = 0;
-            }
-        }
-    }
-
-    @Override
-    public void onFrame(Controller controller) {
-
-        Frame frame = controller.frame();
-        if (!this.isStarted()) {
-            swipe(frame);
-        } else {
-            if (!frame.hands().isEmpty()) {
-                Screen screen = controller.locatedScreens().get(0);
-                if (screen != null && screen.isValid()) {
-                    Hand hand = frame.hands().get(0);
-
-                    if (hand.isValid()) {
-                        Vector intersect = screen.intersect(hand.palmPosition(), hand.direction(), true);
-                        point.setValue(new Point2D(screen.widthPixels() * Math.min(1d, Math.max(0d, intersect.getX())),
-                                screen.heightPixels() * Math.min(1d, Math.max(0d, (1d - intersect.getY())))));
-                    }
-                }
-            }
-        }
-    }
-    
-    public boolean isStarted() {
-        return this.started;
-    }
-    
-    public void setStarted(boolean started) {
-        this.started = started;
-    }
-
-}
-
-public class Test extends Application {
-
-    private final SimpleLeapListener listener = new SimpleLeapListener();
-    private final Controller leapController = new Controller();
-
-    private final AnchorPane root = new AnchorPane();
-    private final Rectangle player1 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT, Color.CADETBLUE);
-    private final Rectangle player2 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT);
-
-    private final Circle ball = new Circle(15, Color.CORAL);
-
-    private Text startText = new Text(300, 300, "Swipe right to start and move your hand up and down");
-    Text restart = new Text(width / 2, height / 2, "Swipe right to start again and move your hand up and down");
+    private Text startText;
+    private Text restartText;
 
     private static final int width = 800;
     private static final int height = 600;
@@ -151,9 +58,23 @@ public class Test extends Application {
     private double ballYPos = height / 2;
     private int scoreP1 = 0;
     private int scoreP2 = 0;
-//    private boolean gameStarted;
     private int p1XPosition = 0;
     private double p2XPosition = width - PLAYER_WIDTH;
+
+    public PongController() {
+        listener = new SimpleLeapListener();
+        leapController = new Controller();
+
+
+        // GUI
+        root = new AnchorPane();
+        player1 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT, Color.CADETBLUE);
+        player2 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT);
+        ball = new Circle(15, Color.CORAL);
+
+        startText = new Text(300, 300, "Swipe right to start and move your hand up and down");
+        restartText = new Text(width / 2, height / 2, "Swipe right to start again and move your hand up and down");
+    }
     
     /**
      *
@@ -236,7 +157,7 @@ public class Test extends Application {
                     @Override
                     public void run() {
                         if (listener.isStarted()) {
-                            root.getChildren().remove(restart);
+                            root.getChildren().remove(restartText);
                                                
                             // bewegt den Player Balken 
                             Point2D leapCapture = root.sceneToLocal(t1.getX() - scene.getX() - scene.getWindow().getX(),
@@ -279,7 +200,7 @@ public class Test extends Application {
 
                         } else {
 
-                            root.getChildren().add(restart);
+                            root.getChildren().add(restartText);
 //                            scene.setFill(Color.RED);
                             ballXPos = width / 2;
                             ballYPos = height / 2;
