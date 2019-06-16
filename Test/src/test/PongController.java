@@ -1,141 +1,50 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package test;
 
 import com.leapmotion.leap.*;
-import java.io.*;
 import java.util.Random;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Point2D;
-import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.shape.SVGPath;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
-import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 
-/**
- *
- * @author hannah
- */
-class SimpleLeapListener extends Listener {
-
-    private final ObjectProperty<Point2D> point = new SimpleObjectProperty<>();
-    private int xCount = 0;
-    private final int MINCOUNT = 5;
-    private float startPos;
-    private float lastPos;
-    private boolean started = false;
-    
-    public SimpleLeapListener () {
-        startPos = 0f;
-        lastPos = 0f;
-    }
-
-    public ObservableValue<Point2D> pointProperty() {
-        return point;
-    }
-
-    public void swipe(Frame frame) {
-        
-        if (frame.hands().count() == 1 && !started) {
-            float velocity = Math.abs(frame.hands().get(0).palmVelocity().getX());
-            float xPos = frame.hands().get(0).palmPosition().getX();
+//import java.io.*;
+//import javafx.animation.KeyFrame;
+//import javafx.animation.Timeline;
+//import javafx.beans.property.ObjectProperty;
+//import javafx.beans.property.SimpleObjectProperty;
+//import javafx.scene.effect.DropShadow;
+//import javafx.scene.shape.SVGPath;
+//import javafx.fxml.FXMLLoader;
+//import javafx.scene.Parent;
+//import javafx.scene.canvas.Canvas;
+//import javafx.scene.canvas.GraphicsContext;
+//import javafx.scene.text.Font;
+//import javafx.scene.text.TextAlignment;
+//import javafx.util.Duration;
 
 
-            if ( velocity > 50 && velocity < 500 ) {
-                
-                if (startPos == 0) {
-                    startPos = xPos;
-                    lastPos = xPos;
+public class PongController extends Application {
 
-                    System.out.println("startPos: " + startPos);
-                    
-                } else if (xPos > lastPos) {
-                    lastPos = xPos;
-                    System.out.println("lastPos: " + lastPos);
-                    System.out.println("diff: " + (lastPos - startPos));
-                    
-                    if ((lastPos - startPos) >= 50) {
-                        started = true;
-                    }
-                }
+    private final SimpleLeapListener listener;
+    private final Controller leapController;
 
-            } else {
-                System.out.println("too slow");
+    private final AnchorPane scene;
+    private final Scene field;
+    private final Rectangle player1;
+    private final Rectangle player2;
+    private final Circle ball;
 
-                startPos = 0;
-                lastPos = 0;
-            }
-        }
-    }
+    private Text startText;
+    private Text restartText;
 
-    @Override
-    public void onFrame(Controller controller) {
-
-        Frame frame = controller.frame();
-        if (!this.isStarted()) {
-            swipe(frame);
-        } else {
-            if (!frame.hands().isEmpty()) {
-                Screen screen = controller.locatedScreens().get(0);
-                if (screen != null && screen.isValid()) {
-                    Hand hand = frame.hands().get(0);
-
-                    if (hand.isValid()) {
-                        Vector intersect = screen.intersect(hand.palmPosition(), hand.direction(), true);
-                        point.setValue(new Point2D(screen.widthPixels() * Math.min(1d, Math.max(0d, intersect.getX())),
-                                screen.heightPixels() * Math.min(1d, Math.max(0d, (1d - intersect.getY())))));
-                    }
-                }
-            }
-        }
-    }
-    
-    public boolean isStarted() {
-        return this.started;
-    }
-    
-    public void setStarted(boolean started) {
-        this.started = started;
-    }
-
-}
-
-public class Test extends Application {
-
-    private final SimpleLeapListener listener = new SimpleLeapListener();
-    private final Controller leapController = new Controller();
-
-    private final AnchorPane root = new AnchorPane();
-    private final Rectangle player1 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT, Color.CADETBLUE);
-    private final Rectangle player2 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT);
-
-    private final Circle ball = new Circle(15, Color.CORAL);
-
-    private Text startText = new Text(300, 300, "Swipe right to start and move your hand up and down");
-    Text restart = new Text(width / 2, height / 2, "Swipe right to start again and move your hand up and down");
-
+    private static final Color ELEMENT_COLOR = Color.WHITE; 
     private static final int width = 800;
     private static final int height = 600;
     private static final int PLAYER_HEIGHT = 100;
@@ -151,9 +60,29 @@ public class Test extends Application {
     private double ballYPos = height / 2;
     private int scoreP1 = 0;
     private int scoreP2 = 0;
-//    private boolean gameStarted;
     private int p1XPosition = 0;
     private double p2XPosition = width - PLAYER_WIDTH;
+
+    public PongController() {
+        listener = new SimpleLeapListener();
+        leapController = new Controller();
+
+
+        // GUI
+
+        // create scene
+        scene = new AnchorPane();
+        field = new Scene(scene, width, height);
+        field.setFill(Color.GRAY);
+
+        // add elements
+        player1 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT, ELEMENT_COLOR);
+        player2 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT, ELEMENT_COLOR);
+        ball = new Circle(15, ELEMENT_COLOR);
+
+        startText = new Text(300, 300, "Swipe right to start and move your hand up and down");
+        restartText = new Text(width / 2, height / 2, "Swipe right to start again and move your hand up and down");
+    }
     
     /**
      *
@@ -207,25 +136,22 @@ public class Test extends Application {
 
         player1.setLayoutY(p1TopPosition);
         player1.setLayoutX(p1XPosition);
-        root.getChildren().add(player1);
+        scene.getChildren().add(player1);
 
 //        player2.setLayoutX(player2.getX());
 //        player2.setLayoutY(player2.getY());
         player2.setLayoutY(p2TopPosition);
         player2.setLayoutX(p2XPosition);
-        root.getChildren().add(player2);
+        scene.getChildren().add(player2);
 
 //        ball.setLayoutX(ball.getRadius());
 //        ball.setLayoutY(ball.getRadius());
         ball.setLayoutY(ballYPos);
         ball.setLayoutX(ballXPos);
-        root.getChildren().add(ball);
+        scene.getChildren().add(ball);
 
-        root.getChildren().add(startText);
-
-        final Scene scene = new Scene(root, width, height);
-        scene.setFill(Color.GRAY);
-//        scene.setOnMouseClicked(e -> gameStarted = true);
+        scene.getChildren().add(startText);
+        scene.setOnMouseClicked(e -> listener.setStarted(true));
 
     
 
@@ -236,25 +162,25 @@ public class Test extends Application {
                     @Override
                     public void run() {
                         if (listener.isStarted()) {
-                            root.getChildren().remove(restart);
+                            scene.getChildren().remove(restartText);
                                                
-                            // bewegt den Player Balken 
-                            Point2D leapCapture = root.sceneToLocal(t1.getX() - scene.getX() - scene.getWindow().getX(),
-                                                                    t1.getY() - scene.getY() - scene.getWindow().getY());
+                            // bewegt den Player Balken
+                            Point2D leapCapture = scene.sceneToLocal(t1.getX() - field.getX() - field.getWindow().getX(),
+                                                                    t1.getY() - field.getY() - field.getWindow().getY());
                             double handYPos = leapCapture.getY();
                             
-                            if (handYPos >= 0d && handYPos <= root.getHeight() - 2d * player1.getY()) {
-                                player1.setTranslateY(handYPos - (root.getHeight()/2 + PLAYER_HEIGHT/2));
+                            if (handYPos >= 0d && handYPos <= scene.getHeight() - 2d * player1.getY()) {
+                                player1.setTranslateY(handYPos - (scene.getHeight()/2 + PLAYER_HEIGHT/2));
                                 setP1Position(player1.getTranslateY());
                             }
                             
 //                            alt
-//                            Point2D d = root.sceneToLocal(t1.getX() - scene.getX() - scene.getWindow().getX(),
+//                            Point2D d = field.sceneToLocal(t1.getX() - scene.getX() - scene.getWindow().getX(),
 //                                    t1.getY() - scene.getY() - scene.getWindow().getY());
 //                            double dx = d.getX();
 //                            double dy = d.getY();
-//                            if (dx >= 0d && dx <= root.getWidth() - 2d * player1.getX()
-//                                    && dy >= 0d && dy <= root.getHeight() - 2d * player1.getY()) {
+//                            if (dx >= 0d && dx <= field.getWidth() - 2d * player1.getX()
+//                                    && dy >= 0d && dy <= field.getHeight() - 2d * player1.getY()) {
 //                                player1.setTranslateY(dy);
 //                            }
                             
@@ -271,16 +197,16 @@ public class Test extends Application {
                             }
 
                             // lädt Scene neu
-                            root.getChildren().remove(startText);
-                            scene.setFill(Color.WHITE);
+                            scene.getChildren().remove(startText);
+                            field.setFill(Color.WHITE);
 
                             ball.setLayoutY(ballYPos);
                             ball.setLayoutX(ballXPos);
 
                         } else {
 
-                            root.getChildren().add(restart);
-//                            scene.setFill(Color.RED);
+                            scene.getChildren().add(restartText);
+//                            field.setFill(Color.RED);
                             ballXPos = width / 2;
                             ballYPos = height / 2;
                             ballXSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
@@ -331,7 +257,7 @@ public class Test extends Application {
             } // end changed
         });
 
-        stage.setScene(scene);
+        stage.setScene(field);
 
         stage.show();
 
