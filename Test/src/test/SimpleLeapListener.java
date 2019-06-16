@@ -1,33 +1,34 @@
 package test;
 
 import com.leapmotion.leap.*;
-import java.io.*;
-import java.util.Random;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-
-import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Point2D;
-import javafx.scene.effect.DropShadow;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.shape.SVGPath;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.*;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextAlignment;
-import javafx.stage.Stage;
-import javafx.util.Duration;
+
+//import java.io.*;
+//import java.util.Random;
+//import javafx.animation.KeyFrame;
+//import javafx.animation.Timeline;
+//import javafx.application.Application;
+//import javafx.application.Platform;
+//import javafx.beans.value.ChangeListener;
+//import javafx.scene.effect.DropShadow;
+//import javafx.scene.layout.AnchorPane;
+//import javafx.scene.shape.SVGPath;
+//import javafx.fxml.FXMLLoader;
+//import javafx.scene.Parent;
+//import javafx.scene.Scene;
+//import javafx.scene.canvas.Canvas;
+//import javafx.scene.canvas.GraphicsContext;
+//import javafx.scene.paint.Color;
+//import javafx.scene.shape.*;
+//import javafx.scene.text.Font;
+//import javafx.scene.text.Text;
+//import javafx.scene.text.TextAlignment;
+//import javafx.stage.Stage;
+//import javafx.util.Duration;
+
 
 public class SimpleLeapListener extends Listener {
 
@@ -81,7 +82,7 @@ public class SimpleLeapListener extends Listener {
         }
     }
 
-    @Override
+//    @Override
     public void onFrame(Controller controller) {
 
         Frame frame = controller.frame();
