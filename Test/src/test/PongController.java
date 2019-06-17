@@ -28,15 +28,13 @@ import javafx.stage.Stage;
 //import javafx.scene.text.Font;
 //import javafx.scene.text.TextAlignment;
 //import javafx.util.Duration;
-
-
 public class PongController extends Application {
 
     private final SimpleLeapListener listener;
     private final Controller leapController;
 
-    private final AnchorPane scene;
-    private final Scene field;
+    private final AnchorPane root;
+    private final Scene scene;
     private final Rectangle player1;
     private final Rectangle player2;
     private final Circle ball;
@@ -44,7 +42,7 @@ public class PongController extends Application {
     private Text startText;
     private Text restartText;
 
-    private static final Color ELEMENT_COLOR = Color.WHITE; 
+    private static final Color ELEMENT_COLOR = Color.WHITE;
     private static final int width = 800;
     private static final int height = 600;
     private static final int PLAYER_HEIGHT = 100;
@@ -63,17 +61,16 @@ public class PongController extends Application {
     private int p1XPosition = 0;
     private double p2XPosition = width - PLAYER_WIDTH;
 
+    public boolean gameStarted;
+
     public PongController() {
         listener = new SimpleLeapListener();
         leapController = new Controller();
 
-
         // GUI
-
         // create scene
-        scene = new AnchorPane();
-        field = new Scene(scene, width, height);
-        field.setFill(Color.GRAY);
+        root = new AnchorPane();
+        scene = new Scene(root, width, height);
 
         // add elements
         player1 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT, ELEMENT_COLOR);
@@ -83,18 +80,18 @@ public class PongController extends Application {
         startText = new Text(300, 300, "Swipe right to start and move your hand up and down");
         restartText = new Text(width / 2, height / 2, "Swipe right to start again and move your hand up and down");
     }
-    
+
     /**
      *
      * @param player
      * @return
      */
     public boolean ballIsInRange(int player) { //double ballYPos, 
-            
+
         double playerTop = 0;
         double playerBottom = 0;
 
-        switch(player) {
+        switch (player) {
             case 1:
                 playerTop = p1TopPosition;
                 playerBottom = p1BottomPosition;
@@ -104,26 +101,20 @@ public class PongController extends Application {
                 playerBottom = p2BottomPosition;
                 break;
         }
-        
-//        System.out.println(ballYPos);
-//        System.out.println(playerTop);
-//        System.out.println(playerBottom);
-        
+
 
         if (ballYPos >= playerTop && ballYPos <= playerBottom) {
-//            System.out.println("ball in range");
             return true;
         } else {
-//            System.out.println("ball not in range");
             return false;
         }
     }
-    
+
     public void setP1Position(double p1TopPosition) {
         this.p1TopPosition = p1TopPosition;
         this.p1BottomPosition = p1TopPosition + PLAYER_HEIGHT;
     }
-    
+
     public void setP2Position(double p2TopPosition) {
         this.p2TopPosition = p2TopPosition;
         this.p2BottomPosition = p2TopPosition + PLAYER_HEIGHT;
@@ -134,56 +125,50 @@ public class PongController extends Application {
 
         leapController.addListener(listener);
 
+        // add Player1
         player1.setLayoutY(p1TopPosition);
         player1.setLayoutX(p1XPosition);
-        scene.getChildren().add(player1);
+        root.getChildren().add(player1);
 
-//        player2.setLayoutX(player2.getX());
-//        player2.setLayoutY(player2.getY());
+        // add Player2
         player2.setLayoutY(p2TopPosition);
         player2.setLayoutX(p2XPosition);
-        scene.getChildren().add(player2);
+        root.getChildren().add(player2);
 
-//        ball.setLayoutX(ball.getRadius());
-//        ball.setLayoutY(ball.getRadius());
+        // add Ball
         ball.setLayoutY(ballYPos);
         ball.setLayoutX(ballXPos);
-        scene.getChildren().add(ball);
+        root.getChildren().add(ball);
 
-        scene.getChildren().add(startText);
-        scene.setOnMouseClicked(e -> listener.setStarted(true));
+        // add StartText
+        root.getChildren().add(startText);
 
-    
-
+        
+        scene.setFill(Color.GRAY);
+        scene.setOnMouseClicked(event -> {
+            System.out.println("clicked");
+            listener.setStarted(true);
+        });
+        
         listener.pointProperty().addListener(new ChangeListener<Point2D>() {
+
             @Override
             public void changed(ObservableValue ov, Point2D t, final Point2D t1) {
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        if (listener.isStarted()) {
-                            scene.getChildren().remove(restartText);
+                        if (true) { // listener.isStarted()
+                            root.getChildren().remove(restartText);
                                                
-                            // bewegt den Player Balken
-                            Point2D leapCapture = scene.sceneToLocal(t1.getX() - field.getX() - field.getWindow().getX(),
-                                                                    t1.getY() - field.getY() - field.getWindow().getY());
+                            // bewegt den Player Balken 
+                            Point2D leapCapture = root.sceneToLocal(t1.getX() - scene.getX() - scene.getWindow().getX(),
+                                                                    t1.getY() - scene.getY() - scene.getWindow().getY());
                             double handYPos = leapCapture.getY();
                             
-                            if (handYPos >= 0d && handYPos <= scene.getHeight() - 2d * player1.getY()) {
-                                player1.setTranslateY(handYPos - (scene.getHeight()/2 + PLAYER_HEIGHT/2));
+                            if (handYPos >= 0d && handYPos <= root.getHeight() - 2d * player1.getY()) {
+                                player1.setTranslateY(handYPos - (root.getHeight()/2 + PLAYER_HEIGHT/2));
                                 setP1Position(player1.getTranslateY());
                             }
-                            
-//                            alt
-//                            Point2D d = field.sceneToLocal(t1.getX() - scene.getX() - scene.getWindow().getX(),
-//                                    t1.getY() - scene.getY() - scene.getWindow().getY());
-//                            double dx = d.getX();
-//                            double dy = d.getY();
-//                            if (dx >= 0d && dx <= field.getWidth() - 2d * player1.getX()
-//                                    && dy >= 0d && dy <= field.getHeight() - 2d * player1.getY()) {
-//                                player1.setTranslateY(dy);
-//                            }
-                            
                             
                             // bewegt den Ball
                             ballXPos += ballXSpeed;
@@ -197,16 +182,16 @@ public class PongController extends Application {
                             }
 
                             // lädt Scene neu
-                            scene.getChildren().remove(startText);
-                            field.setFill(Color.WHITE);
+                            root.getChildren().remove(startText);
+                            scene.setFill(Color.BLACK);
 
                             ball.setLayoutY(ballYPos);
                             ball.setLayoutX(ballXPos);
 
                         } else {
 
-                            scene.getChildren().add(restartText);
-//                            field.setFill(Color.RED);
+                            root.getChildren().add(restartText);
+//                            scene.setFill(Color.RED);
                             ballXPos = width / 2;
                             ballYPos = height / 2;
                             ballXSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
@@ -228,18 +213,11 @@ public class PongController extends Application {
                         
                         // wenn Ball nicht gehalten
                         if (ballXPos < p1XPosition - PLAYER_WIDTH) {
-//                            scoreP2++;
                             listener.setStarted(false);
                         }
                         if (ballXPos > p2XPosition + PLAYER_WIDTH) {
-//                            scoreP1++;
                             listener.setStarted(false);
                         }
-                        
-                        
-//                        if (  ((ballXPos + BALL_R > p2XPosition) && ballYPos >= p2TopPosition && ballYPos <= p2BottomPosition)
-//                           || ((ballXPos < playerOneXPos + PLAYER_WIDTH) && ballYPos >= p1TopPosition && ballYPos <= p1BottomPosition)) {
-
                         
 
                         player1.setLayoutY(p1TopPosition);
@@ -249,15 +227,12 @@ public class PongController extends Application {
                         player2.setLayoutY(p2TopPosition);
                         player2.setLayoutX(p2XPosition);
                         player2.setFill(Color.CADETBLUE);
-
-//                        System.out.println("P1: " + p1TopPosition);
-
                     } // end run
                 });
             } // end changed
         });
 
-        stage.setScene(field);
+        stage.setScene(scene);
 
         stage.show();
 
