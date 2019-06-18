@@ -198,7 +198,7 @@ public class PongController extends Application {
 
                             // lädt Scene neu
                             scene.getChildren().remove(startText);
-                            field.setFill(Color.WHITE);
+                            field.setFill(Color.PURPLE);
 
                             ball.setLayoutY(ballYPos);
                             ball.setLayoutX(ballXPos);
