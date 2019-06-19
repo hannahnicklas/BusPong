@@ -33,11 +33,17 @@ import javafx.geometry.Point2D;
 public class SimpleLeapListener extends Listener {
 
     private final ObjectProperty<Point2D> point = new SimpleObjectProperty<>();
-    private int xCount = 0;
-    private final int MINCOUNT = 5;
+
+    // swipeGesture
     private float startPos;
     private float lastPos;
+
     private boolean started = false;
+    private boolean isFirstStart = true;
+    private final int SWIPE_DISTANCE = 70;
+    
+    private boolean gestureStarted = false;
+    private double gestureProgress = 0;
 
     public SimpleLeapListener() {
         startPos = 0f;
@@ -52,30 +58,32 @@ public class SimpleLeapListener extends Listener {
     public void swipeGesture(Frame frame) {
 
         if (frame.hands().count() == 1 && !started) {
+
             float velocity = Math.abs(frame.hands().get(0).palmVelocity().getX());
             float xPos = frame.hands().get(0).palmPosition().getX();
 
-            if (velocity > 50 && velocity < 500) {
+            if (velocity > 20 && velocity < 500) {
 
                 if (startPos == 0) {
                     startPos = xPos;
                     lastPos = xPos;
-
-                    System.out.println("startPos: " + startPos);
+                    
+                    gestureStarted = true;
 
                 } else if (xPos > lastPos) {
                     lastPos = xPos;
-                    System.out.println("lastPos: " + lastPos);
-                    System.out.println("diff: " + (lastPos - startPos));
-
-                    if ((lastPos - startPos) >= 50) {
-                        started = true;
+                    gestureStarted = true;
+                    
+                    gestureProgress = (lastPos - startPos) / SWIPE_DISTANCE;
+                    System.out.println(this.gestureProgress);
+                    
+                    if ((lastPos - startPos) >= SWIPE_DISTANCE) {
+                        this.setStarted(true);
                     }
                 }
 
             } else {
-                System.out.println("too slow");
-
+                this.gestureStarted = false;
                 startPos = 0;
                 lastPos = 0;
             }
@@ -109,13 +117,6 @@ public class SimpleLeapListener extends Listener {
                         clockwise = false;
                     }
 
-                    //Winkel der mit Hand gezeichnet wird 
-//                    double sweptAngle = 0;
-//                    if (circle.state() != State.STATE_START) {
-//                        //greift auf vorherige Kreis Geste zurück 
-//                        CircleGesture previous = new CircleGesture(controller.frame(1).gesture(circle.id()));
-//                        sweptAngle = (circle.progress() - previous.progress()) * 2 * Math.PI;
-//                    }
                     FingerList fingers = frame.fingers();
                     for (int j = 0; j < fingers.count(); j++) {
                         Finger finger = fingers.get(j);
@@ -127,32 +128,20 @@ public class SimpleLeapListener extends Listener {
                                     if (clockwise && finger.isExtended()) {
                                         if (turns >= 0 && turns <= 1.5) {
                                             System.out.println("Game restarted: " + finger.type());
-                                            started = true;
+                                            this.setStarted(true);
                                         }
                                     }
                                 }
                                 break;
 
                             case TYPE_MIDDLE:
-                                System.out.println("Nicht starten");
+                                // System.out.println("Nicht starten");
                                 break;
                         }
-
-//                    // solange die selbe ID bis andere Hand erkannt wird 
-//                    System.out.println("Circle ID:" + circle.id()
-//                                            + "State:" + circle.state()
-//                                              // Anzahl wie oft Kreis nacheinander gezeichnet wurde 
-//                                            + "Progress: " + turns
-//                                            + "Radius: " + circle.radius()
-//                                            + "Angle: " + Math.toDegrees(sweptAngle)
-//                                            + "" + clockwiseness
-//                                            + "Type " + finger.type());
                     }
-
                     break;
             }
         }
-
     }
 
     public void onConnect(Controller controller) {
@@ -164,10 +153,13 @@ public class SimpleLeapListener extends Listener {
     public void onFrame(Controller controller) {
         Frame frame = controller.frame();
 
-        circleGesture(frame);
-        if (!this.isStarted()) {
+        if (!this.isStarted() && this.isFirstStart) {
             swipeGesture(frame);
-           
+            gestureStarted = true; 
+        }
+        if (!this.isStarted() && !this.isFirstStart) {
+            circleGesture(frame);
+
         } else {
             if (!frame.hands().isEmpty()) {
                 Screen screen = controller.locatedScreens().get(0);
@@ -187,9 +179,21 @@ public class SimpleLeapListener extends Listener {
     public boolean isStarted() {
         return this.started;
     }
+    
+    public boolean gestureDetected() {
+        return this.gestureStarted;
+    }
+    
+    public double gestureProgress() {
+        return this.gestureProgress;
+    }
 
     public void setStarted(boolean started) {
+        this.gestureStarted = false;
+        this.isFirstStart = false;
         this.started = started;
+        this.startPos = 0;
+        this.lastPos = 0;
     }
 
 }

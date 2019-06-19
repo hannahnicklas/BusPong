@@ -1,6 +1,8 @@
 package test;
 
 import com.leapmotion.leap.*;
+import com.sun.glass.events.SwipeGesture;
+
 import java.util.Random;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -17,6 +19,8 @@ import javafx.stage.Stage;
 //import java.io.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.scene.text.Font;
+import javafx.scene.text.TextAlignment;
 //import javafx.beans.property.ObjectProperty;
 //import javafx.beans.property.SimpleObjectProperty;
 //import javafx.scene.effect.DropShadow;
@@ -41,14 +45,18 @@ public class PongController extends Application {
 
     private Text startText;
     private Text restartText;
+    private Rectangle gestureRec;
+    private Text gestureText;
 
     private static final Color ELEMENT_COLOR = Color.WHITE;
     private static final int width = 800;
     private static final int height = 600;
 
     private static final double BALL_RADIUS = 15;
-    private int ballYSpeed = 1;
-    private int ballXSpeed = 1;
+    private static final int INIT_BALL_SPEED = 4;
+    private static final int MAX_BALL_SPEED = 50;
+    private int ballXSpeed = INIT_BALL_SPEED;
+    private int ballYSpeed = INIT_BALL_SPEED;
     private double ballXPos = width / 2;
     private double ballYPos = height / 2;
 
@@ -56,10 +64,14 @@ public class PongController extends Application {
     public Player p2;
 
     public boolean gameStarted;
+    public boolean isFirstStart;
     public double mouseX;
     public double mouseY;
 
     public PongController() {
+
+        isFirstStart = true;
+
         listener = new SimpleLeapListener();
         leapController = new Controller();
 
@@ -73,8 +85,18 @@ public class PongController extends Application {
         p2 = new Player(width, height/2);
         ball = new Circle(15, ELEMENT_COLOR);
 
-        startText = new Text(300, 300, "Swipe right to start and move your hand up and down");
+        startText = new Text(width / 2, height / 2, "Swipe right to start and move your hand up and down");
         restartText = new Text(width / 2, height / 2, "Swipe right to start again and move your hand up and down");
+        
+//        gestureRec = new Rectangle(width - 50, height - 50, Color.CADETBLUE);
+//        gestureRec.setX(25);
+//        gestureRec.setY(25);
+        
+        gestureText = new Text(250, height / 2.5, "SWIPING");
+        gestureText.applyCss();
+
+        gestureText.setFont(Font.font("consolas", 80));
+        gestureText.setFill(Color.CADETBLUE);
     }
 
     
@@ -107,10 +129,11 @@ public class PongController extends Application {
         
         // game started by leap
         listener.pointProperty().addListener(new ChangeListener<Point2D>() {
-
+            
             @Override
             public void changed(ObservableValue ov, Point2D t, final Point2D t1) {
                 gameStarted = listener.isStarted();
+                
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
@@ -129,64 +152,56 @@ public class PongController extends Application {
     }
 
     public void startGame(Stage stage) {
-        Timeline tl = new Timeline(new KeyFrame(Duration.millis(10), e -> run(mouseX, mouseY)));
-		tl.setCycleCount(Timeline.INDEFINITE);
+        Timeline tl = new Timeline(new KeyFrame(Duration.millis(20), e -> run(mouseX, mouseY)));
+	    tl.setCycleCount(Timeline.INDEFINITE);
         scene.setOnMouseMoved(e ->  mouseY  = e.getY());
         
-		stage.setScene(scene);
+        stage.setScene(scene);
         stage.show();
-		tl.play();
+	    tl.play();
     }
 
     public void runGame(double posX, double posY) {
         if (gameStarted) {
-            root.getChildren().remove(restartText);
+            root.getChildren().remove(gestureText);
+            playGame(posX, posY);
 
-            // double windowTLPosX = scene.getWindow().getX();
-            // double windowTLPosY = scene.getWindow().getY();
-
-            // bewegt den Player Balken 
-            // Point2D leapCapture = root.sceneToLocal(posX - scene.getX() - windowTLPosX,
-            //                                         posY - scene.getY() - windowTLPosY;
-            // double handYPos = leapCapture.getY();
-
-            // if (handYPos >= 0d && handYPos <= root.getHeight() - 2d * player1.getY()) {
-            //     player1.setTranslateY(handYPos - (root.getHeight()/2 + PLAYER_HEIGHT/2));
-            //     setP1Position(player1.getTranslateY());
-            // }
-
-            p1.setYPosition(posY);
-
-            // bewegt den Ball
-            ballXPos += ballXSpeed;
-            ballYPos += ballYSpeed;
-
-            // bewegt NPC Balken
-            if (ballXPos < (0.75 * width)) { // wenn Ball weit weg
-                p2.setYPosition(ballYPos);
-            } else { // wenn Ball nah dran
-                p2.setYPosition(ballYPos > p2.getYPosition() ? p2.getYPosition() + 1 : p2.getYPosition() - 1);
-            }
-
-            // lädt Scene neu
-            root.getChildren().remove(startText);
-            scene.setFill(Color.BLACK);
-
-            ball.setLayoutY(ballYPos);
-            ball.setLayoutX(ballXPos);
-
-        } else {
-
-            // root.getChildren().add(restartText);
-            ballXPos = width / 2;
-            ballYPos = height / 2;
-            ballXSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
-            ballYSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
+        } else if(listener.gestureProgress() > 0 && listener.gestureDetected()) {
+//            root.getChildren().remove(gestureRec);
+//            gestureRec.setOpacity(listener.gestureProgress());
+//            root.getChildren().add(gestureRec);
+            
+            root.getChildren().remove(gestureText);
+            gestureText.setOpacity(listener.gestureProgress());
+            root.getChildren().add(gestureText);
         }
-        
-        // Ball versucht zu fliehen
+    }
+
+    public void playGame(double posX, double posY) {
+        root.getChildren().remove(restartText);
+
+        p1.setYPosition(posY);
+
+        // bewegt den Ball
+        ballXPos += ballXSpeed;
+        ballYPos += ballYSpeed;
+
+        // bewegt NPC Balken
+        if (ballXPos < (0.95 * width)) { // wenn Ball weit weg
+            p2.setYPosition(ballYPos);
+        } else { // wenn Ball nah dran
+            p2.setYPosition(ballYPos > p2.getYPosition() ? p2.getYPosition() + 1 : p2.getYPosition() - 1);
+        }
+
+        // lädt Scene neu
+        root.getChildren().remove(startText);
+        scene.setFill(Color.BLACK);
+
+        ball.setLayoutY(ballYPos);
+        ball.setLayoutX(ballXPos);
+
+        // wenn Ball oben / unten trifft
         if (ballYPos > height || ballYPos < 0) { ballYSpeed *= -1; }
-        
         
         // prüft, ob Ball einen Balken trifft
         if (   ((ballXPos + BALL_RADIUS > p2.getXPosition()) && ballIsInRange(p2)) 
@@ -195,19 +210,30 @@ public class PongController extends Application {
             ballXSpeed = increasedSpeed(ballXSpeed);
             ballYSpeed = increasedSpeed(ballYSpeed);
             
-            System.out.println("X Speed: " + Math.abs(ballXSpeed) + ", Y Speed: " + Math.abs(ballYSpeed));
+            // System.out.println("X Speed: " + Math.abs(ballXSpeed) + ", Y Speed: " + Math.abs(ballYSpeed));
 
-        } else if (ballXPos < p1.getXPosition()) { // P1 nichte getroffen
-            gameStarted = false;
+        } else if (ballXPos + BALL_RADIUS < p1.getXPosition()) { // P1 nichte getroffen
+            p2.increaseScore();
+            stopGame();
 
-        } else if (ballXPos > p2.getXPosition()) { // P2 nichte getroffen
-            gameStarted = false;
+        } else if (ballXPos - BALL_RADIUS > p2.getXPosition()) { // P2 nichte getroffen
+            p1.increaseScore();
+            stopGame();
         }
-
-        p1.setFill(Color.CADETBLUE);
-        p2.setFill(Color.CADETBLUE);
     }
 
+    public void stopGame() {
+        // System.out.println("game stopped");
+        gameStarted = false;
+        listener.setStarted(false);
+
+        scene.setFill(Color.GRAY);
+        root.getChildren().add(startText);
+        resetBallSpeed();
+        resetBallPosition();
+
+    }
+    
     @Override
     public void stop() {
         leapController.removeListener(listener);
@@ -229,10 +255,28 @@ public class PongController extends Application {
         double factor = 0.5;
         double ln = (int) Math.log(Math.abs(speed)) + 3;
         double signum = Math.signum(speed);
-        double random = 1 - (1 * (Math.random() - 0.5)); // sorgt für Abweichung vom originalen Speed, damit unregelmasiger Ball
+        double random = 1 - (0.8 * (Math.random() - 0.5)); // sorgt für Abweichung vom originalen Speed, damit unregelmasiger Ball
         
-        double newSpeedD = (speed * random) + (factor * signum * ln);
+        double newSpeed = (speed * random) + (factor * signum * ln);
 
-        return (int) newSpeedD * -1;
+        if (Math.abs(newSpeed) < INIT_BALL_SPEED) {
+            return (int) Math.signum(newSpeed) * INIT_BALL_SPEED;
+
+        } else if (Math.abs(newSpeed) > MAX_BALL_SPEED) {
+            return (int) Math.signum(newSpeed) * MAX_BALL_SPEED;
+
+        } else {
+            return (int) newSpeed * -1;
+        }
+    }
+    
+    public void resetBallSpeed() {
+        ballXSpeed = INIT_BALL_SPEED;
+        ballYSpeed = INIT_BALL_SPEED;
+    }
+
+    public void resetBallPosition() {
+        ballXPos = width / 2 - BALL_RADIUS;
+        ballYPos = height / 2 - BALL_RADIUS;
     }
 }
