@@ -30,7 +30,7 @@ import javafx.animation.Timeline;
 import javafx.util.Duration;
 
 
-public class Pong extends Application {
+public class PongController extends Application {
 
     private final SimpleLeapListener listener;
     private final Controller leapController;
@@ -59,7 +59,7 @@ public class Pong extends Application {
     public double mouseX;
     public double mouseY;
 
-    public Pong() {
+    public PongController() {
         listener = new SimpleLeapListener();
         leapController = new Controller();
 
