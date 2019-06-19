@@ -15,8 +15,8 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 //import java.io.*;
-//import javafx.animation.KeyFrame;
-//import javafx.animation.Timeline;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 //import javafx.beans.property.ObjectProperty;
 //import javafx.beans.property.SimpleObjectProperty;
 //import javafx.scene.effect.DropShadow;
@@ -27,7 +27,7 @@ import javafx.stage.Stage;
 //import javafx.scene.canvas.GraphicsContext;
 //import javafx.scene.text.Font;
 //import javafx.scene.text.TextAlignment;
-//import javafx.util.Duration;
+import javafx.util.Duration;
 
 
 public class PongController extends Application {
@@ -35,238 +35,204 @@ public class PongController extends Application {
     private final SimpleLeapListener listener;
     private final Controller leapController;
 
-    private final AnchorPane scene;
-    private final Scene field;
-    private final Rectangle player1;
-    private final Rectangle player2;
+    private final AnchorPane root;
+    private final Scene scene;
     private final Circle ball;
 
     private Text startText;
     private Text restartText;
 
-    private static final Color ELEMENT_COLOR = Color.WHITE; 
+    private static final Color ELEMENT_COLOR = Color.WHITE;
     private static final int width = 800;
     private static final int height = 600;
-    private static final int PLAYER_HEIGHT = 100;
-    private static final int PLAYER_WIDTH = 15;
-    private static final double BALL_R = 15;
+
+    private static final double BALL_RADIUS = 15;
     private int ballYSpeed = 1;
     private int ballXSpeed = 1;
-    private double p1TopPosition = height / 2;
-    private double p1BottomPosition = p1TopPosition + PLAYER_HEIGHT;
-    private double p2TopPosition = height / 2;
-    private double p2BottomPosition = p2TopPosition + PLAYER_HEIGHT;
     private double ballXPos = width / 2;
     private double ballYPos = height / 2;
-    private int scoreP1 = 0;
-    private int scoreP2 = 0;
-    private int p1XPosition = 0;
-    private double p2XPosition = width - PLAYER_WIDTH;
+
+    public Player p1;
+    public Player p2;
+
+    public boolean gameStarted;
+    public double mouseX;
+    public double mouseY;
 
     public PongController() {
         listener = new SimpleLeapListener();
         leapController = new Controller();
 
-
         // GUI
-
         // create scene
-        scene = new AnchorPane();
-        field = new Scene(scene, width, height);
-        field.setFill(Color.GRAY);
+        root = new AnchorPane();
+        scene = new Scene(root, width, height);
 
         // add elements
-        player1 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT, ELEMENT_COLOR);
-        player2 = new Rectangle(PLAYER_WIDTH, PLAYER_HEIGHT, ELEMENT_COLOR);
+        p1 = new Player(0, height/2);
+        p2 = new Player(width, height/2);
         ball = new Circle(15, ELEMENT_COLOR);
 
         startText = new Text(300, 300, "Swipe right to start and move your hand up and down");
         restartText = new Text(width / 2, height / 2, "Swipe right to start again and move your hand up and down");
     }
-    
-    /**
-     *
-     * @param player
-     * @return
-     */
-    public boolean ballIsInRange(int player) { //double ballYPos, 
-            
-        double playerTop = 0;
-        double playerBottom = 0;
 
-        switch(player) {
-            case 1:
-                playerTop = p1TopPosition;
-                playerBottom = p1BottomPosition;
-                break;
-            case 2:
-                playerTop = p2TopPosition;
-                playerBottom = p2BottomPosition;
-                break;
-        }
-        
-//        System.out.println(ballYPos);
-//        System.out.println(playerTop);
-//        System.out.println(playerBottom);
-        
-
-        if (ballYPos >= playerTop && ballYPos <= playerBottom) {
-//            System.out.println("ball in range");
-            return true;
-        } else {
-//            System.out.println("ball not in range");
-            return false;
-        }
-    }
     
-    public void setP1Position(double p1TopPosition) {
-        this.p1TopPosition = p1TopPosition;
-        this.p1BottomPosition = p1TopPosition + PLAYER_HEIGHT;
-    }
-    
-    public void setP2Position(double p2TopPosition) {
-        this.p2TopPosition = p2TopPosition;
-        this.p2BottomPosition = p2TopPosition + PLAYER_HEIGHT;
-    }
 
-    @Override
+    // @Override
     public void start(Stage stage) throws Exception {
 
         leapController.addListener(listener);
 
-        player1.setLayoutY(p1TopPosition);
-        player1.setLayoutX(p1XPosition);
-        scene.getChildren().add(player1);
+        // add Player
+        root.getChildren().add(p1);
+        root.getChildren().add(p2);
 
-//        player2.setLayoutX(player2.getX());
-//        player2.setLayoutY(player2.getY());
-        player2.setLayoutY(p2TopPosition);
-        player2.setLayoutX(p2XPosition);
-        scene.getChildren().add(player2);
-
-//        ball.setLayoutX(ball.getRadius());
-//        ball.setLayoutY(ball.getRadius());
+        // add Ball
         ball.setLayoutY(ballYPos);
         ball.setLayoutX(ballXPos);
-        scene.getChildren().add(ball);
+        root.getChildren().add(ball);
 
-        scene.getChildren().add(startText);
-        scene.setOnMouseClicked(e -> listener.setStarted(true));
+        // add StartText
+        root.getChildren().add(startText);
 
-    
+        // game not started
+        scene.setFill(Color.GRAY);
 
+        // game started by mouseclick
+        scene.setOnMouseClicked(event -> {
+            gameStarted = true;
+            startGame(stage);
+        });
+        
+        // game started by leap
         listener.pointProperty().addListener(new ChangeListener<Point2D>() {
+
             @Override
             public void changed(ObservableValue ov, Point2D t, final Point2D t1) {
+                gameStarted = listener.isStarted();
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        if (listener.isStarted()) {
-                            scene.getChildren().remove(restartText);
-                                               
-                            // bewegt den Player Balken
-                            Point2D leapCapture = scene.sceneToLocal(t1.getX() - field.getX() - field.getWindow().getX(),
-                                                                    t1.getY() - field.getY() - field.getWindow().getY());
-                            double handYPos = leapCapture.getY();
-                            
-                            if (handYPos >= 0d && handYPos <= scene.getHeight() - 2d * player1.getY()) {
-                                player1.setTranslateY(handYPos - (scene.getHeight()/2 + PLAYER_HEIGHT/2));
-                                setP1Position(player1.getTranslateY());
-                            }
-                            
-//                            alt
-//                            Point2D d = field.sceneToLocal(t1.getX() - scene.getX() - scene.getWindow().getX(),
-//                                    t1.getY() - scene.getY() - scene.getWindow().getY());
-//                            double dx = d.getX();
-//                            double dy = d.getY();
-//                            if (dx >= 0d && dx <= field.getWidth() - 2d * player1.getX()
-//                                    && dy >= 0d && dy <= field.getHeight() - 2d * player1.getY()) {
-//                                player1.setTranslateY(dy);
-//                            }
-                            
-                            
-                            // bewegt den Ball
-                            ballXPos += ballXSpeed;
-                            ballYPos += ballYSpeed;
-                            
-                            // bewegt NPC Balken
-                            if (ballXPos < width - width / 4) {
-                                setP2Position(ballYPos - PLAYER_HEIGHT / 2);
-                            } else {
-                                setP2Position(ballYPos > p2TopPosition + PLAYER_HEIGHT / 2 ? p2TopPosition += 1 : p2TopPosition - 1);
-                            }
-
-                            // lädt Scene neu
-                            scene.getChildren().remove(startText);
-                            field.setFill(Color.PURPLE);
-
-                            ball.setLayoutY(ballYPos);
-                            ball.setLayoutX(ballXPos);
-
-                        } else {
-
-                            scene.getChildren().add(restartText);
-//                            field.setFill(Color.RED);
-                            ballXPos = width / 2;
-                            ballYPos = height / 2;
-                            ballXSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
-                            ballYSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
-                        }
-                        
-                        // Ball versucht zu fliehen
-                        if (ballYPos > height || ballYPos < 0) { ballYSpeed *= -1; }
-                        
-                        
-                        // prüft, ob Ball einen Balken trifft
-                        if ( ((ballXPos + BALL_R > p2XPosition) && ballIsInRange(2)) || ((ballXPos < p1XPosition + PLAYER_WIDTH) && ballIsInRange(1)) ) {
-                            System.out.println(1 * Math.signum(ballYSpeed));
-                            ballYSpeed += 1 * Math.signum(ballYSpeed);
-                            ballXSpeed += 1 * Math.signum(ballXSpeed);
-                            ballXSpeed *= -1;
-                            ballYSpeed *= -1;
-                        }
-                        
-                        // wenn Ball nicht gehalten
-                        if (ballXPos < p1XPosition - PLAYER_WIDTH) {
-//                            scoreP2++;
-                            listener.setStarted(false);
-                        }
-                        if (ballXPos > p2XPosition + PLAYER_WIDTH) {
-//                            scoreP1++;
-                            listener.setStarted(false);
-                        }
-                        
-                        
-//                        if (  ((ballXPos + BALL_R > p2XPosition) && ballYPos >= p2TopPosition && ballYPos <= p2BottomPosition)
-//                           || ((ballXPos < playerOneXPos + PLAYER_WIDTH) && ballYPos >= p1TopPosition && ballYPos <= p1BottomPosition)) {
-
-                        
-
-                        player1.setLayoutY(p1TopPosition);
-                        player1.setLayoutX(p1XPosition);
-                        player1.setFill(Color.CADETBLUE);
-
-                        player2.setLayoutY(p2TopPosition);
-                        player2.setLayoutX(p2XPosition);
-                        player2.setFill(Color.CADETBLUE);
-
-//                        System.out.println("P1: " + p1TopPosition);
-
-                    } // end run
+                        runGame(t1.getX(), t1.getY());
+                    }
                 });
-            } // end changed
+            }
         });
 
-        stage.setScene(field);
-
+        stage.setScene(scene);
         stage.show();
+    }
 
+    public void run(double posX, double posY) {
+        runGame(posX, posY);
+    }
+
+    public void startGame(Stage stage) {
+        Timeline tl = new Timeline(new KeyFrame(Duration.millis(10), e -> run(mouseX, mouseY)));
+		tl.setCycleCount(Timeline.INDEFINITE);
+        scene.setOnMouseMoved(e ->  mouseY  = e.getY());
+        
+		stage.setScene(scene);
+        stage.show();
+		tl.play();
+    }
+
+    public void runGame(double posX, double posY) {
+        if (gameStarted) {
+            root.getChildren().remove(restartText);
+
+            // double windowTLPosX = scene.getWindow().getX();
+            // double windowTLPosY = scene.getWindow().getY();
+
+            // bewegt den Player Balken 
+            // Point2D leapCapture = root.sceneToLocal(posX - scene.getX() - windowTLPosX,
+            //                                         posY - scene.getY() - windowTLPosY;
+            // double handYPos = leapCapture.getY();
+
+            // if (handYPos >= 0d && handYPos <= root.getHeight() - 2d * player1.getY()) {
+            //     player1.setTranslateY(handYPos - (root.getHeight()/2 + PLAYER_HEIGHT/2));
+            //     setP1Position(player1.getTranslateY());
+            // }
+
+            p1.setYPosition(posY);
+
+            // bewegt den Ball
+            ballXPos += ballXSpeed;
+            ballYPos += ballYSpeed;
+
+            // bewegt NPC Balken
+            if (ballXPos < (0.75 * width)) { // wenn Ball weit weg
+                p2.setYPosition(ballYPos);
+            } else { // wenn Ball nah dran
+                p2.setYPosition(ballYPos > p2.getYPosition() ? p2.getYPosition() + 1 : p2.getYPosition() - 1);
+            }
+
+            // lädt Scene neu
+            root.getChildren().remove(startText);
+            scene.setFill(Color.BLACK);
+
+            ball.setLayoutY(ballYPos);
+            ball.setLayoutX(ballXPos);
+
+        } else {
+
+            // root.getChildren().add(restartText);
+            ballXPos = width / 2;
+            ballYPos = height / 2;
+            ballXSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
+            ballYSpeed = new Random().nextInt(2) == 0 ? 1 : -1;
+        }
+        
+        // Ball versucht zu fliehen
+        if (ballYPos > height || ballYPos < 0) { ballYSpeed *= -1; }
+        
+        
+        // prüft, ob Ball einen Balken trifft
+        if (   ((ballXPos + BALL_RADIUS > p2.getXPosition()) && ballIsInRange(p2)) 
+            || ((ballXPos - BALL_RADIUS < p1.getXPosition()) && ballIsInRange(p1)) ) { // getroffen
+            
+            ballXSpeed = increasedSpeed(ballXSpeed);
+            ballYSpeed = increasedSpeed(ballYSpeed);
+            
+            System.out.println("X Speed: " + Math.abs(ballXSpeed) + ", Y Speed: " + Math.abs(ballYSpeed));
+
+        } else if (ballXPos < p1.getXPosition()) { // P1 nichte getroffen
+            gameStarted = false;
+
+        } else if (ballXPos > p2.getXPosition()) { // P2 nichte getroffen
+            gameStarted = false;
+        }
+
+        p1.setFill(Color.CADETBLUE);
+        p2.setFill(Color.CADETBLUE);
     }
 
     @Override
     public void stop() {
         leapController.removeListener(listener);
-//        leapController.removeListener(listener2);
 
+    }
+
+    // Helfermethoden
+
+    public boolean ballIsInRange(Player player) {
+        if ( ballYPos >= player.getTopYPos() 
+             && ballYPos <= player.getBottomYPos()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public int increasedSpeed(int speed) {
+        double factor = 0.5;
+        double ln = (int) Math.log(Math.abs(speed)) + 3;
+        double signum = Math.signum(speed);
+        double random = 1 - (1 * (Math.random() - 0.5)); // sorgt für Abweichung vom originalen Speed, damit unregelmasiger Ball
+        
+        double newSpeedD = (speed * random) + (factor * signum * ln);
+
+        return (int) newSpeedD * -1;
     }
 }
