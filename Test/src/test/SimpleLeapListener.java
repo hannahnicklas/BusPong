@@ -41,7 +41,11 @@ public class SimpleLeapListener extends Listener {
     private boolean started = false;
     private boolean isFirstStart = true;
     private final int SWIPE_DISTANCE = 70;
-    
+
+    private boolean gestureAddComplete = false;
+    boolean added = false;
+    boolean grabStarted = false;
+
     private boolean gestureStarted = false;
     private double gestureProgress = 0;
 
@@ -67,16 +71,16 @@ public class SimpleLeapListener extends Listener {
                 if (startPos == 0) {
                     startPos = xPos;
                     lastPos = xPos;
-                    
+
                     gestureStarted = true;
 
                 } else if (xPos > lastPos) {
                     lastPos = xPos;
                     gestureStarted = true;
-                    
+
                     gestureProgress = (lastPos - startPos) / SWIPE_DISTANCE;
                     System.out.println(this.gestureProgress);
-                    
+
                     if ((lastPos - startPos) >= SWIPE_DISTANCE) {
                         this.setStarted(true);
                     }
@@ -144,6 +148,33 @@ public class SimpleLeapListener extends Listener {
         }
     }
 
+    public void addPlayerGesture(Frame frame) {
+        HandList hands = frame.hands();
+        Hand firstHand = hands.get(0);
+        FingerList fingers = firstHand.fingers();
+
+        float fistProgress = 0;
+
+        float fistStart = firstHand.grabStrength();
+
+        if (frame.hands().count() == 1) {
+            fistProgress = firstHand.grabStrength();
+            if (fistStart == 0) {
+                grabStarted = true;
+            }
+
+            if (grabStarted && fistProgress == 1.0) {
+                //System.out.println("works");
+                gestureAddComplete = true;
+            }
+
+        }
+    }
+
+    public void changePlayers() {
+
+    }
+
     public void onConnect(Controller controller) {
         System.out.println("Controller connected");
         controller.enableGesture(Gesture.Type.TYPE_CIRCLE);
@@ -153,9 +184,17 @@ public class SimpleLeapListener extends Listener {
     public void onFrame(Controller controller) {
         Frame frame = controller.frame();
 
+        addPlayerGesture(frame);
+
+        if (gestureAddComplete && added == false) {
+            changePlayers();
+            System.out.println("Add gesture");
+            added = true;
+        }
+
         if (!this.isStarted() && this.isFirstStart) {
             swipeGesture(frame);
-            gestureStarted = true; 
+            gestureStarted = true;
         }
         if (!this.isStarted() && !this.isFirstStart) {
             circleGesture(frame);
@@ -179,11 +218,11 @@ public class SimpleLeapListener extends Listener {
     public boolean isStarted() {
         return this.started;
     }
-    
+
     public boolean gestureDetected() {
         return this.gestureStarted;
     }
-    
+
     public double gestureProgress() {
         return this.gestureProgress;
     }
