@@ -176,10 +176,10 @@ public class SimpleLeapListener extends Listener {
 
     }
 
-    public void swipe_audio() {
-        AudioClip note = new AudioClip(this.getClass().getResource("swipe.mp3").toString()); //seriöser error2.mp3
-        note.play();
-    }
+//    public void swipe_audio() {
+//        AudioClip note = new AudioClip(this.getClass().getResource("swipe.mp3").toString()); 
+//        note.play();
+//    }
 
     public void onConnect(Controller controller) {
         System.out.println("Controller connected");
@@ -201,7 +201,7 @@ public class SimpleLeapListener extends Listener {
         if (!this.isStarted() && this.isFirstStart) {
             swipeGesture(frame);
             gestureStarted = true;
-            swipe_audio();
+           
         }
         if (!this.isStarted() && !this.isFirstStart) {
             circleGesture(frame);

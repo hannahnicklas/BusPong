@@ -146,25 +146,8 @@ public class PongController extends Application {
 
     public void run(double posX, double posY) {
         runGame(posX, posY);
-    }
-
-    private void hit_audio() {
-        AudioClip note = new AudioClip(this.getClass().getResource("hit.mp3").toString());
-        note.play();
-    }
-
-    private void hitwall_audio() {
-        AudioClip note = new AudioClip(this.getClass().getResource("hitwall.mp3").toString());
-        note.play();
-    }
-
-    private void lost_audio() {
-        AudioClip note = new AudioClip(this.getClass().getResource("error1baby.mp3").toString()); //seriöser error2.mp3
-        note.play();
-    }
-
-
-
+    }  
+    
     public void startGame(Stage stage) {
         Timeline tl = new Timeline(new KeyFrame(Duration.millis(20), e -> run(mouseX, mouseY)));
         tl.setCycleCount(Timeline.INDEFINITE);
@@ -180,7 +163,7 @@ public class PongController extends Application {
         if (gameStarted) {
             root.getChildren().remove(gestureText);
             playGame(posX, posY);
-         
+
         } else if (listener.gestureProgress() > 0 && listener.gestureDetected()) {
 //            root.getChildren().remove(gestureRec);
 //            gestureRec.setOpacity(listener.gestureProgress());
@@ -189,7 +172,7 @@ public class PongController extends Application {
             root.getChildren().remove(gestureText);
             gestureText.setOpacity(listener.gestureProgress());
             root.getChildren().add(gestureText);
-   
+
         }
     }
 
@@ -219,26 +202,22 @@ public class PongController extends Application {
         // wenn Ball oben / unten trifft
         if (ballYPos > height || ballYPos < 0) {
             ballYSpeed *= -1;
-            hitwall_audio();
+
         }
 
         // prüft, ob Ball einen Balken trifft
         if (((ballXPos + BALL_RADIUS > p2.getXPosition()) && ballIsInRange(p2))
-                || ((ballXPos - BALL_RADIUS < p1.getXPosition()) && ballIsInRange(p1))) { // getroffen
-
+                || ((ballXPos - BALL_RADIUS < p1.getXPosition()) && ballIsInRange(p1))) { // getroffen           
             ballXSpeed = increasedSpeed(ballXSpeed);
             ballYSpeed = increasedSpeed(ballYSpeed);
-            hit_audio();
-            // System.out.println("X Speed: " + Math.abs(ballXSpeed) + ", Y Speed: " + Math.abs(ballYSpeed));
 
+            // System.out.println("X Speed: " + Math.abs(ballXSpeed) + ", Y Speed: " + Math.abs(ballYSpeed));
         } else if (ballXPos + BALL_RADIUS < p1.getXPosition()) { // P1 nichte getroffen
             p2.increaseScore();
-            lost_audio();
             stopGame();
 
         } else if (ballXPos - BALL_RADIUS > p2.getXPosition()) { // P2 nichte getroffen
             p1.increaseScore();
-            lost_audio();
             stopGame();
         }
     }
