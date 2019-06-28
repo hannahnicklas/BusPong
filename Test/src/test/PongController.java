@@ -19,6 +19,7 @@ import javafx.stage.Stage;
 //import java.io.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.scene.media.AudioClip;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 //import javafx.beans.property.ObjectProperty;
@@ -32,7 +33,6 @@ import javafx.scene.text.TextAlignment;
 //import javafx.scene.text.Font;
 //import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
-
 
 public class PongController extends Application {
 
@@ -81,25 +81,22 @@ public class PongController extends Application {
         scene = new Scene(root, width, height);
 
         // add elements
-        p1 = new Player(0, height/2);
-        p2 = new Player(width, height/2);
+        p1 = new Player(0, height / 2);
+        p2 = new Player(width, height / 2);
         ball = new Circle(15, ELEMENT_COLOR);
 
         startText = new Text(width / 2, height / 2, "Swipe right to start and move your hand up and down");
         restartText = new Text(width / 2, height / 2, "Swipe right to start again and move your hand up and down");
-        
+
 //        gestureRec = new Rectangle(width - 50, height - 50, Color.CADETBLUE);
 //        gestureRec.setX(25);
 //        gestureRec.setY(25);
-        
         gestureText = new Text(250, height / 2.5, "SWIPING");
         gestureText.applyCss();
 
         gestureText.setFont(Font.font("consolas", 80));
         gestureText.setFill(Color.CADETBLUE);
     }
-
-    
 
     // @Override
     public void start(Stage stage) throws Exception {
@@ -126,14 +123,14 @@ public class PongController extends Application {
             gameStarted = true;
             startGame(stage);
         });
-        
+
         // game started by leap
         listener.pointProperty().addListener(new ChangeListener<Point2D>() {
-            
+
             @Override
             public void changed(ObservableValue ov, Point2D t, final Point2D t1) {
                 gameStarted = listener.isStarted();
-                
+
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
@@ -151,29 +148,48 @@ public class PongController extends Application {
         runGame(posX, posY);
     }
 
+    private void hit_audio() {
+        AudioClip note = new AudioClip(this.getClass().getResource("hit.mp3").toString());
+        note.play();
+    }
+
+    private void hitwall_audio() {
+        AudioClip note = new AudioClip(this.getClass().getResource("hitwall.mp3").toString());
+        note.play();
+    }
+
+    private void lost_audio() {
+        AudioClip note = new AudioClip(this.getClass().getResource("error1baby.mp3").toString()); //seriöser error2.mp3
+        note.play();
+    }
+
+
+
     public void startGame(Stage stage) {
         Timeline tl = new Timeline(new KeyFrame(Duration.millis(20), e -> run(mouseX, mouseY)));
-	    tl.setCycleCount(Timeline.INDEFINITE);
-        scene.setOnMouseMoved(e ->  mouseY  = e.getY());
-        
+        tl.setCycleCount(Timeline.INDEFINITE);
+        scene.setOnMouseMoved(e -> mouseY = e.getY());
+
         stage.setScene(scene);
         stage.show();
-	    tl.play();
+        tl.play();
+
     }
 
     public void runGame(double posX, double posY) {
         if (gameStarted) {
             root.getChildren().remove(gestureText);
             playGame(posX, posY);
-
-        } else if(listener.gestureProgress() > 0 && listener.gestureDetected()) {
+         
+        } else if (listener.gestureProgress() > 0 && listener.gestureDetected()) {
 //            root.getChildren().remove(gestureRec);
 //            gestureRec.setOpacity(listener.gestureProgress());
 //            root.getChildren().add(gestureRec);
-            
+
             root.getChildren().remove(gestureText);
             gestureText.setOpacity(listener.gestureProgress());
             root.getChildren().add(gestureText);
+   
         }
     }
 
@@ -201,23 +217,28 @@ public class PongController extends Application {
         ball.setLayoutX(ballXPos);
 
         // wenn Ball oben / unten trifft
-        if (ballYPos > height || ballYPos < 0) { ballYSpeed *= -1; }
-        
+        if (ballYPos > height || ballYPos < 0) {
+            ballYSpeed *= -1;
+            hitwall_audio();
+        }
+
         // prüft, ob Ball einen Balken trifft
-        if (   ((ballXPos + BALL_RADIUS > p2.getXPosition()) && ballIsInRange(p2)) 
-            || ((ballXPos - BALL_RADIUS < p1.getXPosition()) && ballIsInRange(p1)) ) { // getroffen
-            
+        if (((ballXPos + BALL_RADIUS > p2.getXPosition()) && ballIsInRange(p2))
+                || ((ballXPos - BALL_RADIUS < p1.getXPosition()) && ballIsInRange(p1))) { // getroffen
+
             ballXSpeed = increasedSpeed(ballXSpeed);
             ballYSpeed = increasedSpeed(ballYSpeed);
-            
+            hit_audio();
             // System.out.println("X Speed: " + Math.abs(ballXSpeed) + ", Y Speed: " + Math.abs(ballYSpeed));
 
         } else if (ballXPos + BALL_RADIUS < p1.getXPosition()) { // P1 nichte getroffen
             p2.increaseScore();
+            lost_audio();
             stopGame();
 
         } else if (ballXPos - BALL_RADIUS > p2.getXPosition()) { // P2 nichte getroffen
             p1.increaseScore();
+            lost_audio();
             stopGame();
         }
     }
@@ -233,7 +254,7 @@ public class PongController extends Application {
         resetBallPosition();
 
     }
-    
+
     @Override
     public void stop() {
         leapController.removeListener(listener);
@@ -241,10 +262,9 @@ public class PongController extends Application {
     }
 
     // Helfermethoden
-
     public boolean ballIsInRange(Player player) {
-        if ( ballYPos >= player.getTopYPos() 
-             && ballYPos <= player.getBottomYPos()) {
+        if (ballYPos >= player.getTopYPos()
+                && ballYPos <= player.getBottomYPos()) {
             return true;
         } else {
             return false;
@@ -256,7 +276,7 @@ public class PongController extends Application {
         double ln = (int) Math.log(Math.abs(speed)) + 3;
         double signum = Math.signum(speed);
         double random = 1 - (0.8 * (Math.random() - 0.5)); // sorgt für Abweichung vom originalen Speed, damit unregelmasiger Ball
-        
+
         double newSpeed = (speed * random) + (factor * signum * ln);
 
         if (Math.abs(newSpeed) < INIT_BALL_SPEED) {
@@ -269,7 +289,7 @@ public class PongController extends Application {
             return (int) newSpeed * -1;
         }
     }
-    
+
     public void resetBallSpeed() {
         ballXSpeed = INIT_BALL_SPEED;
         ballYSpeed = INIT_BALL_SPEED;

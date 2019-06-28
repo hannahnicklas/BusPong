@@ -6,6 +6,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Point2D;
+import javafx.scene.media.AudioClip;
 
 //import java.io.*;
 //import java.util.Random;
@@ -175,6 +176,11 @@ public class SimpleLeapListener extends Listener {
 
     }
 
+    public void swipe_audio() {
+        AudioClip note = new AudioClip(this.getClass().getResource("swipe.mp3").toString()); //seriöser error2.mp3
+        note.play();
+    }
+
     public void onConnect(Controller controller) {
         System.out.println("Controller connected");
         controller.enableGesture(Gesture.Type.TYPE_CIRCLE);
@@ -195,6 +201,7 @@ public class SimpleLeapListener extends Listener {
         if (!this.isStarted() && this.isFirstStart) {
             swipeGesture(frame);
             gestureStarted = true;
+            swipe_audio();
         }
         if (!this.isStarted() && !this.isFirstStart) {
             circleGesture(frame);
