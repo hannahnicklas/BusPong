@@ -5,96 +5,105 @@ import javafx.scene.shape.Rectangle;
 
 public class Player extends Rectangle {
 
-    private static final int PLAYER_HEIGHT = 100;
-    private static final int PLAYER_WIDTH = 15;
-
-    private double topXPos;
-    private double middleXPos;
-    
-    private double topYPos;
-    private double middleYPos;
-    private double bottomYPos;
-
+    private static final int[] PLAYER_SIZE = {15, 100};
     private int score;
 
-    public Player(int startXPos, int startYPos) {
-        this.setXPosition(startXPos);
-        this.setYPosition(startYPos);
+    public Player(double side) {
 
-        this.setWidth(PLAYER_WIDTH);
-        this.setHeight(PLAYER_HEIGHT);
+        this.setWidth(PLAYER_SIZE[Var.X]);
+        this.setHeight(PLAYER_SIZE[Var.Y]);
+
+        this.setStartPosition(side);
 
         this.setFill(Color.WHITE);
-
         this.score = 0;
     }
 
+    public void followBall(Ball ball) {
+        if (ball.getLayout(Var.X) < (0.93 * Var.minScreenSize[0])) {
+            this.setLayoutMiddle(Var.Y, ball.getLayout(Var.Y));
 
-    // -------------------------------------------------
-    // eigene Setter
-
-    public void setXPosition(double middleXPos) {
-        if(middleXPos < PLAYER_WIDTH/2) {
-            this.middleXPos = PLAYER_WIDTH/2;
         } else {
-            this.middleXPos = middleXPos - PLAYER_WIDTH/2;
+            if (ball.getLayout(Var.Y) > this.getLayoutMiddle(Var.Y)) {
+                this.setLayout(Var.Y, this.getLayout(Var.Y) + 1);
+            } else {
+                this.setLayout(Var.Y, this.getLayout(Var.Y) - 1);
+            }
         }
-
-        this.setTopXPosition();
     }
 
-    public double getXPosition() {
-        return this.middleXPos;
-    }
+    private double calcEdgePosition(double position) {
+        double newPos = position - PLAYER_SIZE[0];
 
-    private void setTopXPosition() {
-        this.topXPos = middleXPos - PLAYER_WIDTH/2;
-        this.setLayoutX(this.topXPos);
-    }
-
-    public void setYPosition(double middleYPos) {
-        this.middleYPos = middleYPos;
-        this.setTopYPosition();
-        this.setBottomYPosition();
-    }
-
-    public double getYPosition() {
-        return this.middleYPos;
-    }
-
-    private void setTopYPosition() {
-        this.topYPos = middleYPos - PLAYER_HEIGHT/2;
-        this.setLayoutY(this.topYPos);
-    }
-
-    private void setBottomYPosition() {
-        this.bottomYPos = middleYPos + PLAYER_HEIGHT/2;
+        if (newPos < 0) {
+            newPos = 0;
+        }
+        
+        return newPos;
     }
 
 
-    // -------------------------------------------------
-    // generic Getter and Setter
+    // ********************************************************************************************
+    // Getter & Setter
 
-    public static int getPlayerHeight() {
-        return PLAYER_HEIGHT;
+    // Position
+    public void setStartPosition(double side) {
+        this.setLayout(Var.X, calcEdgePosition(side));
+        this.setLayout(Var.Y, Var.minScreenSize[1]/2 - PLAYER_SIZE[1]/2);
     }
 
-    public static int getPlayerWidth() {
-        return PLAYER_WIDTH;
+    public double getStartPos() {
+        System.out.println(this.getLayout(Var.Y));
+        return this.getLayout(Var.Y);
     }
 
-    // Positions
-    public double getTopXPos() {
-        return topXPos;
+    public double getEndPos() {
+        System.out.println(this.getLayout(Var.Y) + PLAYER_SIZE[Var.Y]);
+        return this.getLayout(Var.Y) + PLAYER_SIZE[Var.Y];
     }
 
-    public double getTopYPos() {
-        return topYPos;
+
+    // Layout
+    public void setLayout(int index, double value) {
+        switch(index) {
+            case 0: this.setLayoutX(value); break;
+            case 1: this.setLayoutY(value); break;
+        }
     }
 
-    public double getBottomYPos() {
-        return bottomYPos;
+    public void setLayoutMiddle(int index, double value) {
+        switch(index) {
+            case 0: this.setLayoutX(value - PLAYER_SIZE[1]/2); break;
+            case 1: this.setLayoutY(value - PLAYER_SIZE[1]/2); break;
+        }
     }
+
+    public double getLayout(int index) {
+        switch(index) {
+            case 0: return this.getLayoutX();
+            case 1: return this.getLayoutY();
+            default: return -1.0;
+        }
+    }
+
+    public double getLayoutMiddle(int index) {
+        switch(index) {
+            case 0: return this.getLayoutX() + PLAYER_SIZE[1]/2;
+            case 1: return this.getLayoutY() + PLAYER_SIZE[1]/2;
+            default: return -1.0;
+        }
+    }
+
+
+    // Size
+    public double getSize(int index) {
+        switch(index) {
+            case 0: return this.getWidth();
+            case 1: return this.getHeight();
+            default: return -1.0;
+        }
+    }
+
 
     // Score
     public int getScore() {
@@ -103,5 +112,9 @@ public class Player extends Rectangle {
 
     public void increaseScore() {
         this.score++;
+    }
+
+    public void resetScore() {
+        this.score = 0;
     }
 }
