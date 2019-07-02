@@ -8,29 +8,6 @@ import javafx.beans.value.ObservableValue;
 import javafx.geometry.Point2D;
 import javafx.scene.media.AudioClip;
 
-//import java.io.*;
-//import java.util.Random;
-//import javafx.animation.KeyFrame;
-//import javafx.animation.Timeline;
-//import javafx.application.Application;
-//import javafx.application.Platform;
-//import javafx.beans.value.ChangeListener;
-//import javafx.scene.effect.DropShadow;
-//import javafx.scene.layout.AnchorPane;
-//import javafx.scene.shape.SVGPath;
-//import javafx.fxml.FXMLLoader;
-//import javafx.scene.Parent;
-//import javafx.scene.Scene;
-//import javafx.scene.canvas.Canvas;
-//import javafx.scene.canvas.GraphicsContext;
-//import javafx.scene.paint.Color;
-//import javafx.scene.shape.*;
-//import javafx.scene.text.Font;
-//import javafx.scene.text.Text;
-//import javafx.scene.text.TextAlignment;
-//import javafx.stage.Stage;
-//import javafx.util.Duration;
-//import com.leapmotion.leap.Gesture.State;
 public class SimpleLeapListener extends Listener {
 
     private final ObjectProperty<Point2D> point = new SimpleObjectProperty<>();
@@ -39,16 +16,16 @@ public class SimpleLeapListener extends Listener {
     private float startPos;
     private float lastPos;
 
-    private boolean started = false;
-    private boolean isFirstStart = true;
-    private final int SWIPE_DISTANCE = 70;
+    private final int SWIPE_DISTANCE = 100;
+    private final int SWIPE_MIN_VELOCITY = 50;
+    private final int SWIPE_MAX_VELOCITY = 1000;
 
-    private boolean gestureAddComplete = false;
+    private boolean grabGestureCompleted = false;
     boolean added = false;
     boolean grabStarted = false;
 
-    private boolean gestureStarted = false;
-    private double gestureProgress = 0;
+    private boolean swipeGestureStarted = false;
+    private double swipeGestureProgress = 0;
 
     public SimpleLeapListener() {
         startPos = 0f;
@@ -61,34 +38,35 @@ public class SimpleLeapListener extends Listener {
 
     //Swipe to start
     public void swipeGesture(Frame frame) {
-
-        if (frame.hands().count() == 1 && !started) {
-
+        
+        if (frame.hands().count() == 1 && !Var.isGameStarted()) {
+            
             float velocity = Math.abs(frame.hands().get(0).palmVelocity().getX());
             float xPos = frame.hands().get(0).palmPosition().getX();
 
-            if (velocity > 20 && velocity < 500) {
-
+            
+            if (velocity > SWIPE_MIN_VELOCITY && velocity < SWIPE_MAX_VELOCITY) {
                 if (startPos == 0) {
                     startPos = xPos;
                     lastPos = xPos;
-
-                    gestureStarted = true;
-
+                    
+                    swipeGestureStarted = true;
+                    
                 } else if (xPos > lastPos) {
                     lastPos = xPos;
-                    gestureStarted = true;
-
-                    gestureProgress = (lastPos - startPos) / SWIPE_DISTANCE;
-                    System.out.println(this.gestureProgress);
+                    swipeGestureStarted = true;
+                    
+                    swipeGestureProgress = (lastPos - startPos) / SWIPE_DISTANCE;
+                    System.out.println("Progress: " + swipeGestureProgress);
 
                     if ((lastPos - startPos) >= SWIPE_DISTANCE) {
                         this.setStarted(true);
+                        System.out.println("Swipe Gesture detected");
                     }
                 }
-
+                
             } else {
-                this.gestureStarted = false;
+                this.setStarted(false);
                 startPos = 0;
                 lastPos = 0;
             }
@@ -129,18 +107,13 @@ public class SimpleLeapListener extends Listener {
                         switch (finger.type()) {
                             case TYPE_INDEX:
 
-                                if (!this.isStarted()) {
-                                    if (clockwise && finger.isExtended()) {
-                                        if (turns >= 0 && turns <= 1.5) {
-                                            System.out.println("Game restarted: " + finger.type());
-                                            this.setStarted(true);
-                                        }
-                                    }
+                                if (!Var.isGameStarted() && clockwise && finger.isExtended() && turns >= 0 && turns <= 1.5) {
+                                    this.setStarted(true);
+                                    System.out.println("Circle Gesture detected");
                                 }
                                 break;
 
                             case TYPE_MIDDLE:
-                                // System.out.println("Nicht starten");
                                 break;
                         }
                     }
@@ -149,7 +122,8 @@ public class SimpleLeapListener extends Listener {
         }
     }
 
-    public void addPlayerGesture(Frame frame) {
+    //Change Player
+    public void grabGesture(Frame frame) {
         HandList hands = frame.hands();
         Hand firstHand = hands.get(0);
         FingerList fingers = firstHand.fingers();
@@ -160,26 +134,19 @@ public class SimpleLeapListener extends Listener {
 
         if (frame.hands().count() == 1) {
             fistProgress = firstHand.grabStrength();
+
             if (fistStart == 0) {
                 grabStarted = true;
             }
 
-            if (grabStarted && fistProgress == 1.0) {
-                //System.out.println("works");
-                gestureAddComplete = true;
+            if (grabStarted && !grabGestureCompleted && fistProgress == 1.0) {
+                this.setGrabGestureCompleted(true);
+                this.setStarted(true);
+                System.out.println("Grab Gesture detected");
             }
-
         }
     }
 
-    public void changePlayers() {
-
-    }
-
-   public void swipe_audio() {
-    //    AudioClip note = new AudioClip(this.getClass().getResource("swipe.mp3").toString()); 
-    //    note.play();
-   }
 
     public void onConnect(Controller controller) {
         System.out.println("Controller connected");
@@ -190,56 +157,58 @@ public class SimpleLeapListener extends Listener {
     public void onFrame(Controller controller) {
         Frame frame = controller.frame();
 
-        addPlayerGesture(frame);
-
-        if (gestureAddComplete && added == false) {
-            changePlayers();
-            System.out.println("Add gesture");
-            added = true;
-        }
-
-        if (!this.isStarted() && this.isFirstStart) {
+        if (!Var.isGameStarted() && Var.isFirstStart()) {
             swipeGesture(frame);
-            gestureStarted = true;
-           
-        }
-        if (!this.isStarted() && !this.isFirstStart) {
+            swipeGestureStarted = true;
+            
+        } else if (!Var.isGameStarted() && !Var.isFirstStart()) {
+            grabGesture(frame);
             circleGesture(frame);
 
-        } else {
-            if (!frame.hands().isEmpty()) {
-                Screen screen = controller.locatedScreens().get(0);
-                if (screen != null && screen.isValid()) {
-                    Hand hand = frame.hands().get(0);
+        } else if (!frame.hands().isEmpty()) {
+            Screen screen = controller.locatedScreens().get(0);
+            if (screen != null && screen.isValid()) {
+                Hand hand = frame.hands().get(0);
 
-                    if (hand.isValid()) {
-                        Vector intersect = screen.intersect(hand.palmPosition(), hand.direction(), true);
-                        point.setValue(new Point2D(screen.widthPixels() * Math.min(1d, Math.max(0d, intersect.getX())),
-                                screen.heightPixels() * Math.min(1d, Math.max(0d, (1d - intersect.getY())))));
-                    }
+                if (hand.isValid()) {
+                    Vector intersect = screen.intersect(hand.palmPosition(), hand.direction(), true);
+                    point.setValue(new Point2D(screen.widthPixels() * Math.min(1d, Math.max(0d, intersect.getX())),
+                            screen.heightPixels() * Math.min(1d, Math.max(0d, (1d - intersect.getY())))));
                 }
             }
         }
     }
 
-    public boolean isStarted() {
-        return this.started;
+    public boolean isSwipeGestureDetected() {
+        return this.swipeGestureStarted;
     }
 
-    public boolean gestureDetected() {
-        return this.gestureStarted;
-    }
-
-    public double gestureProgress() {
-        return this.gestureProgress;
+    public double getSwipeGestureProgress() {
+        return this.swipeGestureProgress;
     }
 
     public void setStarted(boolean started) {
-        this.gestureStarted = false;
-        this.isFirstStart = false;
-        this.started = started;
-        this.startPos = 0;
-        this.lastPos = 0;
+        Var.setGameStarted(started);
+
+        if (started) {
+            Var.setFirstStart(false);
+            this.swipeGestureStarted = false;
+            this.startPos = 0;
+            this.lastPos = 0;
+        }
     }
 
+    public boolean isGrabGestureCompleted() {
+        return grabGestureCompleted;
+    }
+
+    public void setGrabGestureCompleted(boolean grabGestureCompleted) {
+        this.grabGestureCompleted = grabGestureCompleted;
+    }
+
+    public void sleep(int millisec) {
+        try {
+            Thread.sleep(millisec);
+        } catch (InterruptedException ex) {}
+    }
 }

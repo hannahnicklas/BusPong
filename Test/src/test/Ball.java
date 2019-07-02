@@ -61,10 +61,8 @@ public class Ball extends Circle {
 
     public boolean isInRangeOf(Player player) {
         if (this.getPosition(Var.Y) >= player.getStartPos() && this.getPosition(Var.Y) <= player.getEndPos()) {
-            System.out.println("is in range of player");
             return true;
         } else {
-            System.out.println("is not in range of player");
             return false;
         }
     }

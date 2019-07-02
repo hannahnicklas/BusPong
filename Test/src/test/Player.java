@@ -20,7 +20,7 @@ public class Player extends Rectangle {
     }
 
     public void followBall(Ball ball) {
-        if (ball.getLayout(Var.X) < (0.93 * Var.minScreenSize[0])) {
+        if (ball.getLayout(Var.X) < (0.90 * Var.minScreenSize[0])) {
             this.setLayoutMiddle(Var.Y, ball.getLayout(Var.Y));
 
         } else {
@@ -53,12 +53,10 @@ public class Player extends Rectangle {
     }
 
     public double getStartPos() {
-        System.out.println(this.getLayout(Var.Y));
         return this.getLayout(Var.Y);
     }
 
     public double getEndPos() {
-        System.out.println(this.getLayout(Var.Y) + PLAYER_SIZE[Var.Y]);
         return this.getLayout(Var.Y) + PLAYER_SIZE[Var.Y];
     }
 
